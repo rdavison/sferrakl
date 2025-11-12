@@ -1,0 +1,11 @@
+[package]
+name = "sferrakl_corpus_cli"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "sferrakl_corpus_cli"
+path = "src/lib.rs"
+
+[dependencies]
+sferrakl_corpus = { path = "../sferrakl_corpus" }
