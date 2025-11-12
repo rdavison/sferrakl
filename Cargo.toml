@@ -1,0 +1,8 @@
+[workspace]
+members = [
+    "crates/sferrakl_corpus",
+    "crates/sferrakl_corpus_cli",
+    "crates/sferrakl_corpus_cli_app",
+    "crates/sferrakl_corpus_inspector",
+]
+resolver = "2"
