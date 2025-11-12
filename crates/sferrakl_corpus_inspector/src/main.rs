@@ -1,4 +1,6 @@
+//! Binary that surfaces a focused inspection report for the sferrakl corpus.
+
 fn main() {
-    let summary = sferrakl_corpus::process_corpus();
-    println!("Inspector report: {}", summary);
+    let report = sferrakl_corpus::inspection_report();
+    println!("{}", report);
 }
