@@ -1,3 +1,4 @@
+pub mod bigram;
 pub mod key;
 
 #[cfg(test)]
@@ -18,5 +19,11 @@ mod tests {
         "}
         .trim_end();
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn bigram_init() {
+        let bigram_map = bigram::Map::init(Src::Ansi30, &|_, _| 1.0f64);
+        assert_eq!(bigram_map.0.len(), ANSI30.len() * ANSI30.len());
     }
 }
