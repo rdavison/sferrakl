@@ -7,12 +7,12 @@ pub mod key;
 #[cfg(test)]
 mod tests {
 
+    use super::bigram;
+    use super::finger::Finger;
+    use super::hand::Hand;
+    use super::hand_finger::HandFinger;
     use super::key::Src;
-    use crate::bigram;
-    use crate::finger::Finger;
-    use crate::hand::Hand;
-    use crate::hand_finger::HandFinger;
-    use crate::key::ANSI30;
+    use super::key::ANSI30;
 
     #[test]
     fn key_display() {
