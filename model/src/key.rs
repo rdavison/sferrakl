@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt::Display;
 
 #[rustfmt::skip]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
@@ -121,10 +122,16 @@ impl Id {
 }
 
 #[derive(Debug)]
-pub struct Map(HashMap<Id, Code>);
+pub struct Map<T>(HashMap<Id, T>);
+
+#[derive(Debug)]
+pub struct KeyMap<T> {
+    src: Src,
+    map: Map<T>,
+}
 
 impl Src {
-    pub fn keymap(self) -> KeyMap {
+    pub fn keycodes(self) -> KeyMap<Code> {
         let map = Map(match self {
             Src::Ansi30 => {
                 let mut map = HashMap::with_capacity(ANSI30.len());
@@ -141,19 +148,10 @@ impl Src {
     }
 }
 
-#[derive(Debug)]
-pub struct KeyMap {
-    src: Src,
-    map: Map,
-}
-
-impl KeyMap {
-    pub fn new(src: Src) -> KeyMap {
-        src.keymap()
-    }
-}
-
-impl std::fmt::Display for KeyMap {
+impl<T> Display for KeyMap<T>
+where
+    T: Display,
+{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut out = String::with_capacity(80);
         out.push_str(&format!("Src: {}", self.src));

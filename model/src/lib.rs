@@ -3,11 +3,13 @@ pub mod key;
 #[cfg(test)]
 mod tests {
 
-    use super::key::{KeyMap, Src};
+    use super::key::Src;
+    use crate::bigram;
+    use crate::key::ANSI30;
 
     #[test]
     fn key_display() {
-        let actual = KeyMap::new(Src::Ansi30).to_string();
+        let actual = Src::Ansi30.keycodes().to_string();
         let expected = indoc::indoc! {"
             Src: Ansi30
             q w e r t y u i o p
