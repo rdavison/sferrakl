@@ -21,6 +21,7 @@ pub const ANSI30: [Id; 30] = {
     ]
 };
 
+#[derive(Debug, Copy, Clone)]
 pub enum Src {
     Ansi30,
 }
@@ -33,11 +34,18 @@ impl std::fmt::Display for Src {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct Code(char);
 
-impl Code {
-    pub fn value(&self) -> char {
-        self.0
+impl std::fmt::Debug for Code {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("Code").field(&self.0).finish()
+    }
+}
+
+impl std::fmt::Display for Code {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
@@ -112,11 +120,12 @@ impl Id {
     }
 }
 
+#[derive(Debug)]
 pub struct Map(HashMap<Id, Code>);
 
 impl Src {
-    pub fn keymap(self) -> Map {
-        Map(match self {
+    pub fn keymap(self) -> KeyMap {
+        let map = Map(match self {
             Src::Ansi30 => {
                 let mut map = HashMap::with_capacity(ANSI30.len());
 
@@ -127,17 +136,43 @@ impl Src {
                 }
                 map
             }
-        })
+        });
+        KeyMap { src: self, map }
     }
 }
 
-pub struct Key {
+#[derive(Debug)]
+pub struct KeyMap {
     src: Src,
     map: Map,
 }
 
-impl std::fmt::Display for Key {
+impl KeyMap {
+    pub fn new(src: Src) -> KeyMap {
+        src.keymap()
+    }
+}
+
+impl std::fmt::Display for KeyMap {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Key {{ src: {}, mappings: {} }}", self.src, self.map.0.len())
+        let mut out = String::with_capacity(80);
+        out.push_str(&format!("Src: {}", self.src));
+
+        for (i, &id) in ANSI30.iter().enumerate() {
+            if (i) % 10 == 0 {
+                out.push('\n');
+            }
+            if let Some(code) = self.map.0.get(&id) {
+                out.push_str(&format!("{} ", code));
+            }
+        }
+
+        let out = out
+            .lines()
+            .map(|line| line.trim_end())
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        write!(f, "{}", out)
     }
 }

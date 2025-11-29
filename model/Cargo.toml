@@ -1,0 +1,13 @@
+[package]
+name = "sferrakl-model"
+version = "0.1.0"
+authors = ["stronglytyped <richard.neil.davison@gmail.com>"]
+description = "A keyboard layout model."
+keywords = ["sferrakl", "model"]
+homepage = "https://github.com/rdavison/sferrakl"
+repository = "https://github.com/rdavison/sferrakl"
+license = "MIT"
+edition = "2021"
+
+[dependencies]
+indoc = "2"
