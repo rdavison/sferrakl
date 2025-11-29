@@ -56,4 +56,35 @@ mod tests {
         let hand_finger_r_i = HandFinger((Hand::R, Finger::I));
         assert_eq!(format!("{}", hand_finger_r_i), "RI");
     }
+
+    #[test]
+    fn test_to_hand_finger_map() {
+        let key_map = Src::Ansi30.keymap();
+        let hand_finger_map = key_map.to_hand_finger_map();
+
+        // Check some specific keys
+        let q_keys = hand_finger_map
+            .get(&Hand::L)
+            .unwrap()
+            .get(&Finger::P)
+            .unwrap();
+        assert!(q_keys.iter().any(|k| k.code.map(|c| c.to_string()) == Some("q".to_string())));
+
+        let j_keys = hand_finger_map
+            .get(&Hand::R)
+            .unwrap()
+            .get(&Finger::I)
+            .unwrap();
+        assert!(j_keys.iter().any(|k| k.code.map(|c| c.to_string()) == Some("j".to_string())));
+        assert!(j_keys.iter().any(|k| k.code.map(|c| c.to_string()) == Some("u".to_string())));
+
+        // Check total number of keys
+        let mut total_keys = 0;
+        for (_, finger_map) in hand_finger_map.iter() {
+            for (_, keys_set) in finger_map.iter() {
+                total_keys += keys_set.len();
+            }
+        }
+        assert_eq!(total_keys, ANSI30.len());
+    }
 }

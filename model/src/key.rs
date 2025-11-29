@@ -1,6 +1,6 @@
 use super::finger::Finger;
 use super::hand::Hand;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 
 #[rustfmt::skip]
@@ -37,7 +37,7 @@ impl std::fmt::Display for Src {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Code(char);
 
 impl std::fmt::Debug for Code {
@@ -243,6 +243,27 @@ pub struct Key {
     pub code: Option<Code>,
 }
 
+impl PartialEq for Key {
+    fn eq(&self, other: &Self) -> bool {
+        self.hand == other.hand
+            && self.finger == other.finger
+            && self.row == other.row
+            && self.code == other.code
+    }
+}
+
+impl Eq for Key {}
+
+impl std::hash::Hash for Key {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.hand.hash(state);
+        self.finger.hash(state);
+        self.row.hash(state);
+        self.code.hash(state);
+    }
+}
+
+
 impl std::fmt::Display for Key {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.code {
@@ -280,5 +301,22 @@ impl Src {
             }
         });
         KeyMap { src: self, map }
+    }
+}
+
+impl KeyMap<Key> {
+    pub fn to_hand_finger_map(self) -> HashMap<Hand, HashMap<Finger, HashSet<Key>>> {
+        let mut hand_finger_map: HashMap<Hand, HashMap<Finger, HashSet<Key>>> = HashMap::new();
+
+        for (_, key) in self.map.0 {
+            hand_finger_map
+                .entry(key.hand)
+                .or_default()
+                .entry(key.finger)
+                .or_default()
+                .insert(key);
+        }
+
+        hand_finger_map
     }
 }
