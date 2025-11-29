@@ -1,5 +1,6 @@
 pub mod bigram;
 pub mod finger;
+pub mod hand;
 pub mod key;
 
 #[cfg(test)]
@@ -8,6 +9,7 @@ mod tests {
     use super::key::Src;
     use crate::bigram;
     use crate::finger::Finger;
+    use crate::hand::Hand;
     use crate::key::ANSI30;
 
     #[test]
@@ -36,5 +38,11 @@ mod tests {
         assert_eq!(format!("{:?}", Finger::M), "M");
         assert_eq!(format!("{:?}", Finger::I), "I");
         assert_eq!(format!("{:?}", Finger::T), "T");
+    }
+
+    #[test]
+    fn hand_enum() {
+        assert_eq!(format!("{:?}", Hand::L), "L");
+        assert_eq!(format!("{:?}", Hand::R), "R");
     }
 }
