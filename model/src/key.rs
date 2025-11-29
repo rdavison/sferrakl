@@ -319,4 +319,17 @@ impl KeyMap<Key> {
 
         hand_finger_map
     }
+
+    pub fn to_hand_finger_tuple_map(self) -> HashMap<(Hand, Finger), HashSet<Key>> {
+        let mut hand_finger_map: HashMap<(Hand, Finger), HashSet<Key>> = HashMap::new();
+
+        for (_, key) in self.map.0 {
+            hand_finger_map
+                .entry((key.hand, key.finger))
+                .or_default()
+                .insert(key);
+        }
+
+        hand_finger_map
+    }
 }
