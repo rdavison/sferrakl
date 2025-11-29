@@ -1,3 +1,5 @@
+use super::finger::Finger;
+use super::hand::Hand;
 use std::collections::HashMap;
 use std::fmt::Display;
 
@@ -119,6 +121,83 @@ impl Id {
         };
         char_opt.map(Code)
     }
+
+    #[rustfmt::skip]
+    pub fn default_hand(self) -> Hand {
+        use Id::*;
+        match self {
+            // Left hand
+              Esc  | F1   | F2   | F3   | F4   | F5
+            | Grav | _1   | _2   | _3   | _4   | _5
+            | Tab  | Q    | W    | E    | R    | T
+            | Caps | A    | S    | D    | F    | G
+            | Lsft | Z    | X    | C    | V    | B
+            | Fn   | Lctl | Lopt | Lcmd => Hand::L,
+            // Right hand
+              F6   | F7   | F8   | F9   | F10  | F11  | F12  | Powr
+            | _6   | _7   | _8   | _9   | _0   | Hyph | Eq   | Bspc
+            | Y    | U    | I    | O    | P    | Obrk | Cbrk | Bsl
+            | H    | J    | K    | L    | Semi | Quot | Entr
+            | N    | M    | Comm | Prd  | Slsh | Rsft
+            | Spc  | Rcmd | Ropt
+            | Left | Down | Up | Rght => Hand::R,
+        }
+    }
+
+    #[rustfmt::skip]
+    pub fn default_finger(self) -> Finger {
+        use Id::*;
+        match self {
+            // Pinky (P)
+              Esc  | F1  | F10  | F11  | F12  | Powr
+            | Grav | _1  | _0   | Hyph | Eq   | Bspc
+            | Tab  | Q   | P    | Obrk | Cbrk | Bsl
+            | Caps | A   | Semi | Quot | Entr
+            | Lsft | Z   | Slsh | Rsft => Finger::P,
+            // Ring (R)
+              F2   | F9
+            | _2   | _9
+            | W    | O
+            | S    | L
+            | X    | Prd => Finger::R,
+            // Middle (M)
+              F3   | F8
+            | _3   | _8
+            | E    | I
+            | D    | K
+            | C    | Comm => Finger::M,
+            // Index (I)
+              F4   | F5   | F6   | F7
+            | _4   | _5   | _6   | _7
+            | R    | T    | Y    | U
+            | F    | G    | H    | J
+            | V    | B    | N    | M => Finger::I,
+            // Thumb (T)
+            Fn   | Lctl | Lopt | Lcmd | Spc  | Rcmd | Ropt => Finger::T,
+            // Arrows (mixed)
+            Left => Finger::I,
+            Rght => Finger::R,
+            Up | Down => Finger::M,
+        }
+    }
+
+    pub fn default_row(self) -> u8 {
+        use Id::*;
+        match self {
+            // Function row
+            Esc | F1 | F2 | F3 | F4 | F5 | F6 | F7 | F8 | F9 | F10 | F11 | F12 | Powr => 0,
+            // Number row
+            Grav | _1 | _2 | _3 | _4 | _5 | _6 | _7 | _8 | _9 | _0 | Hyph | Eq | Bspc => 1,
+            // QWERTY row
+            Tab | Q | W | E | R | T | Y | U | I | O | P | Obrk | Cbrk | Bsl => 2,
+            // ASDFG row
+            Caps | A | S | D | F | G | H | J | K | L | Semi | Quot | Entr => 3,
+            // ZXCVB row
+            Lsft | Z | X | C | V | B | N | M | Comm | Prd | Slsh | Rsft => 4,
+            // Bottom row
+            Fn | Lctl | Lopt | Lcmd | Spc | Rcmd | Ropt | Left | Down | Up | Rght => 5,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -128,24 +207,6 @@ pub struct Map<T>(HashMap<Id, T>);
 pub struct KeyMap<T> {
     src: Src,
     map: Map<T>,
-}
-
-impl Src {
-    pub fn keycodes(self) -> KeyMap<Code> {
-        let map = Map(match self {
-            Src::Ansi30 => {
-                let mut map = HashMap::with_capacity(ANSI30.len());
-
-                for &id in ANSI30.iter() {
-                    if let Some(code) = id.to_code() {
-                        map.insert(id, code);
-                    }
-                }
-                map
-            }
-        });
-        KeyMap { src: self, map }
-    }
 }
 
 impl<T> Display for KeyMap<T>
@@ -172,5 +233,52 @@ where
             .join("\n");
 
         write!(f, "{}", out)
+    }
+}
+
+pub struct Key {
+    pub hand: super::hand::Hand,
+    pub finger: super::finger::Finger,
+    pub row: u8,
+    pub code: Option<Code>,
+}
+
+impl std::fmt::Display for Key {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self.code {
+            Some(code) => write!(f, "{}", code),
+            None => write!(f, "_"), // Placeholder for non-printable keys
+        }
+    }
+}
+
+impl Id {
+    pub fn key(self) -> Key {
+        let hand = self.default_hand();
+        let finger = self.default_finger();
+        let row = self.default_row();
+        let code = self.to_code();
+        Key {
+            hand,
+            finger,
+            row,
+            code,
+        }
+    }
+}
+
+impl Src {
+    pub fn keymap(self) -> KeyMap<Key> {
+        let mut map = HashMap::with_capacity(ANSI30.len());
+        let map = Map(match self {
+            Src::Ansi30 => {
+                for &id in ANSI30.iter() {
+                    let key = id.key();
+                    map.insert(id, key);
+                }
+                map
+            }
+        });
+        KeyMap { src: self, map }
     }
 }

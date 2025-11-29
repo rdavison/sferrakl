@@ -16,7 +16,7 @@ mod tests {
 
     #[test]
     fn key_display() {
-        let actual = Src::Ansi30.keycodes().to_string();
+        let actual = Src::Ansi30.keymap().to_string();
         let expected = indoc::indoc! {"
             Src: Ansi30
             q w e r t y u i o p
