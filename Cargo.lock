@@ -3,26 +3,5 @@
 version = 4
 
 [[package]]
-name = "sferrakl_corpus"
+name = "sferrakl-model"
 version = "0.1.0"
-
-[[package]]
-name = "sferrakl_corpus_cli"
-version = "0.1.0"
-dependencies = [
- "sferrakl_corpus",
-]
-
-[[package]]
-name = "sferrakl_corpus_cli_app"
-version = "0.1.0"
-dependencies = [
- "sferrakl_corpus_cli",
-]
-
-[[package]]
-name = "sferrakl_corpus_inspector"
-version = "0.1.0"
-dependencies = [
- "sferrakl_corpus",
-]
