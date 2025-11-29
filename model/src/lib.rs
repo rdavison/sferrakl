@@ -1,6 +1,7 @@
 pub mod bigram;
 pub mod finger;
 pub mod hand;
+pub mod hand_finger;
 pub mod key;
 
 #[cfg(test)]
@@ -10,6 +11,7 @@ mod tests {
     use crate::bigram;
     use crate::finger::Finger;
     use crate::hand::Hand;
+    use crate::hand_finger::HandFinger;
     use crate::key::ANSI30;
 
     #[test]
@@ -33,16 +35,25 @@ mod tests {
 
     #[test]
     fn finger_enum() {
-        assert_eq!(format!("{:?}", Finger::P), "P");
-        assert_eq!(format!("{:?}", Finger::R), "R");
-        assert_eq!(format!("{:?}", Finger::M), "M");
-        assert_eq!(format!("{:?}", Finger::I), "I");
-        assert_eq!(format!("{:?}", Finger::T), "T");
+        assert_eq!(format!("{}", Finger::P), "P");
+        assert_eq!(format!("{}", Finger::R), "R");
+        assert_eq!(format!("{}", Finger::M), "M");
+        assert_eq!(format!("{}", Finger::I), "I");
+        assert_eq!(format!("{}", Finger::T), "T");
     }
 
     #[test]
     fn hand_enum() {
-        assert_eq!(format!("{:?}", Hand::L), "L");
-        assert_eq!(format!("{:?}", Hand::R), "R");
+        assert_eq!(format!("{}", Hand::L), "L");
+        assert_eq!(format!("{}", Hand::R), "R");
+    }
+
+    #[test]
+    fn hand_finger_display() {
+        let hand_finger_l_p = HandFinger((Hand::L, Finger::P));
+        assert_eq!(format!("{}", hand_finger_l_p), "LP");
+
+        let hand_finger_r_i = HandFinger((Hand::R, Finger::I));
+        assert_eq!(format!("{}", hand_finger_r_i), "RI");
     }
 }
