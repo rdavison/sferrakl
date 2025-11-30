@@ -1,4 +1,5 @@
 pub mod bigram;
+pub mod corpus;
 pub mod finger;
 pub mod hand;
 pub mod hand_finger;
@@ -119,5 +120,34 @@ mod tests {
             total_keys += keys_set.len();
         }
         assert_eq!(total_keys, ANSI30.len());
+    }
+
+    #[test]
+    fn test_corpus_processing() {
+        let text = "abacaba";
+        let mut corpus = super::corpus::Corpus::new();
+        corpus.process_text(text);
+
+        // ab: distinct-2. "ab", "ba", "ac", "ca"
+        assert_eq!(*corpus.ab.get("ab").unwrap(), 2);
+        assert_eq!(*corpus.ab.get("ba").unwrap(), 2);
+        assert_eq!(*corpus.ab.get("ac").unwrap(), 1);
+        assert_eq!(*corpus.ab.get("ca").unwrap(), 1);
+        assert_eq!(corpus.ab.len(), 4);
+
+        // aba: repeat-1-distinct-2. "aba", "aca"
+        assert_eq!(*corpus.aba.get("aba").unwrap(), 2);
+        assert_eq!(*corpus.aba.get("aca").unwrap(), 1);
+        assert_eq!(corpus.aba.len(), 2);
+
+        // abc: distinct-3. "bac", "cab"
+        assert_eq!(*corpus.abc.get("bac").unwrap(), 1);
+        assert_eq!(*corpus.abc.get("cab").unwrap(), 1);
+        assert_eq!(corpus.abc.len(), 2);
+        
+        // a_b: skip-1-distinct-2. "bc", "cb"
+        assert_eq!(*corpus.a_b.get("bc").unwrap(), 1);
+        assert_eq!(*corpus.a_b.get("cb").unwrap(), 1);
+        assert_eq!(corpus.a_b.len(), 2);
     }
 }
