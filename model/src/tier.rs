@@ -34,12 +34,10 @@ impl Eq for RowChangeType {} // Can implement Eq because PartialEq is implemente
 fn classify_row_change(
     key1: &Key,
     key2: &Key,
-    hf1: &HandFinger,
-    hf2: &HandFinger,
+    HandFinger((hand1, finger1)): &HandFinger,
+    HandFinger((hand2, finger2)): &HandFinger,
 ) -> RowChangeType {
     use RowChangeType::*;
-    let HandFinger((hand1, finger1)) = hf1;
-    let HandFinger((hand2, finger2)) = hf2;
     let row1 = key1.row;
     let row2 = key2.row;
     let row_diff = (row2 as i8) - (row1 as i8);
@@ -103,7 +101,10 @@ fn classify_row_change(
 
     panic!(
         "Failed to classify row change for keys: {:?} -> {:?} with fingerings: {} -> {}",
-        key1, key2, hf1, hf2
+        key1,
+        key2,
+        HandFinger((*hand1, *finger1)),
+        HandFinger((*hand2, *finger2))
     );
 }
 
