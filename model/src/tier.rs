@@ -133,9 +133,13 @@ fn combine(f1: Fingering, f2: Fingering, s1: &[Key], s2: &[Key]) -> Fingering {
         return f1;
     }
 
-    let last_hf_f1 = f1.last().unwrap();
+    let last_hf_f1 = f1
+        .last()
+        .expect("f1 should not be empty due to prior check");
 
-    let first_hf_f2 = f2.first().unwrap();
+    let first_hf_f2 = f2
+        .first()
+        .expect("f2 should not be empty due to prior check");
 
     if last_hf_f1 != first_hf_f2 {
         return [f1, f2].concat();
