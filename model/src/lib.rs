@@ -160,7 +160,10 @@ mod tests {
 
         // Check last element
         let last = nstrokes.last().unwrap();
-        assert_eq!(last, vec![keys[keys.len() - 1].clone(), keys[keys.len() - 1].clone()]);
+        assert_eq!(
+            last,
+            vec![keys[keys.len() - 1].clone(), keys[keys.len() - 1].clone()]
+        );
     }
 
     #[test]
@@ -180,19 +183,18 @@ mod tests {
             })
             .collect();
 
-        let get_stroke = |s: &str| -> Vec<Key> {
-            s.chars().map(|c| char_to_key[&c].clone()).collect()
-        };
+        let get_stroke =
+            |s: &str| -> Vec<Key> { s.chars().map(|c| char_to_key[&c].clone()).collect() };
 
         // S-tier: same-row, diff fingers, has index
         assert_eq!(assign_tier(&get_stroke("asdf")), Some(Tier::S));
-        
+
         // A-tier: good-row-change-strong-fingers
         assert_eq!(assign_tier(&get_stroke("se")), Some(Tier::A));
-        
+
         // C-tier: wide-good-row-change-weak-fingers or weak-scissors-strong-fingers
         assert_eq!(assign_tier(&get_stroke("ed")), Some(Tier::C));
-        
+
         // SameFinger
         assert_eq!(assign_tier(&get_stroke("qq")), Some(Tier::F));
 
