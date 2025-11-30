@@ -16,6 +16,7 @@ mod tests {
     use super::hand_finger::HandFinger;
     use super::key::Src;
     use super::key::ANSI30;
+    use core::percentage::T as Percentage;
 
     #[test]
     fn key_display() {
@@ -171,7 +172,6 @@ mod tests {
     fn test_assign_tier() {
         use super::key::Key;
         use super::tier::assign_tier;
-        use core::percentage::T as Percentage;
         use std::collections::HashMap;
 
         let keymap = crate::key::Src::Ansi30.keymap();
