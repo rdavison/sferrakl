@@ -147,7 +147,6 @@ fn combine(f1: Fingering, f2: Fingering, s1: &[Key], s2: &[Key]) -> Fingering {
 
     // SFB detected between the two strokes.
     let key1 = &s1[s1.len() - 1];
-
     let key2 = &s2[0];
 
     // Option 1: Try to resolve by changing key2's finger
