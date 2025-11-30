@@ -38,19 +38,20 @@ fn classify_row_change(
     hf2: &HandFinger,
 ) -> RowChangeType {
     use RowChangeType::*;
-    let finger1 = hf1.0 .1;
+    let HandFinger((hand1, finger1)) = hf1;
+    let HandFinger((hand2, finger2)) = hf2;
     let row1 = key1.row;
     let row2 = key2.row;
     let row_diff = (row2 as i8) - (row1 as i8);
 
     // Same finger, calculate travel distance
-    if finger1 == hf2.0 .1 {
+    if finger1 == finger2 {
         let distance = (key1.row as f64 - key2.row as f64).abs(); // Simple row distance
         return SameFinger(distance);
     }
 
     // Different hands
-    if hf1.0 .0 != hf2.0 .0 {
+    if hand1 != hand2 {
         return None;
     }
 
@@ -108,8 +109,7 @@ fn classify_row_change(
 
 fn is_weak_finger_stroke(fingering: &Fingering) -> bool {
     fingering.iter().all(|hf| {
-        let finger = hf.0 .1;
-
+        let HandFinger((_, finger)) = hf;
         matches!(finger, Finger::P | Finger::R)
     })
 }
@@ -233,10 +233,10 @@ fn determine_fingering(stroke: &[Key]) -> Fingering {
             }
 
             // Sort candidates: prefer strong fingers
-            candidates.sort_by_key(|c| !c.1);
+            candidates.sort_by_key(|(_, is_strong)| !is_strong);
 
-            if let Some(best) = candidates.first() {
-                return best.0.clone();
+            if let Some((fingering_vec, _)) = candidates.first() {
+                return fingering_vec.clone();
             }
 
             // Cannot resolve. Return the SFB.
@@ -275,7 +275,10 @@ pub fn assign_tier(stroke: &[Key]) -> Option<Tier> {
         let mut unique_fingers = HashSet::new();
         if fingering.iter().all(|f| unique_fingers.insert(f)) {
             if stroke.len() >= 3 {
-                if fingering.iter().any(|hf| hf.0 .1 == Finger::I) {
+                if fingering.iter().any(|hf_item| {
+                    let HandFinger((_, finger)) = hf_item;
+                    finger == &Finger::I
+                }) {
                     return Some(Tier::S);
                 }
             } else {

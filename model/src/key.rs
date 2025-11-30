@@ -42,13 +42,15 @@ pub struct Code(char);
 
 impl std::fmt::Debug for Code {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("Code").field(&self.0).finish()
+        let Code(c) = self;
+        f.debug_tuple("Code").field(c).finish()
     }
 }
 
 impl std::fmt::Display for Code {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
+        let Code(c) = self;
+        write!(f, "{}", c)
     }
 }
 
@@ -221,7 +223,8 @@ where
             if (i) % 10 == 0 {
                 out.push('\n');
             }
-            if let Some(code) = self.map.0.get(&id) {
+            let Map(map) = &self.map;
+            if let Some(code) = map.get(&id) {
                 out.push_str(&format!("{} ", code));
             }
         }
@@ -238,11 +241,13 @@ where
 
 impl<T> KeyMap<T> {
     pub fn values(&self) -> impl Iterator<Item = &T> {
-        self.map.0.values()
+        let Map(map) = &self.map;
+        map.values()
     }
 
     pub fn into_values(self) -> impl Iterator<Item = T> {
-        self.map.0.into_values()
+        let Map(map) = self.map;
+        map.into_values()
     }
 }
 
@@ -342,8 +347,9 @@ impl Src {
 impl KeyMap<Key> {
     pub fn to_hand_finger_map(self) -> HashMap<Hand, HashMap<Finger, HashSet<Key>>> {
         let mut hand_finger_map: HashMap<Hand, HashMap<Finger, HashSet<Key>>> = HashMap::new();
+        let Map(map) = self.map;
 
-        for (_, key) in self.map.0 {
+        for (_, key) in map {
             hand_finger_map
                 .entry(key.hand)
                 .or_default()
@@ -357,8 +363,9 @@ impl KeyMap<Key> {
 
     pub fn to_hand_finger_tuple_map(self) -> HashMap<(Hand, Finger), HashSet<Key>> {
         let mut hand_finger_map: HashMap<(Hand, Finger), HashSet<Key>> = HashMap::new();
+        let Map(map) = self.map;
 
-        for (_, key) in self.map.0 {
+        for (_, key) in map {
             hand_finger_map
                 .entry((key.hand, key.finger))
                 .or_default()

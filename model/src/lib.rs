@@ -33,7 +33,8 @@ mod tests {
     #[test]
     fn bigram_init() {
         let bigram_map = bigram::Map::init(Src::Ansi30, &|_, _| 1.0f64);
-        assert_eq!(bigram_map.0.len(), ANSI30.len() * ANSI30.len());
+        let bigram::Map(map) = bigram_map;
+        assert_eq!(map.len(), ANSI30.len() * ANSI30.len());
     }
 
     #[test]
