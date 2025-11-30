@@ -5,22 +5,29 @@ use std::io;
 #[derive(Debug, Default)]
 #[allow(non_snake_case)]
 pub struct Corpus {
-    pub ab: HashMap<String, u64>,     // distinct-2
-    pub aba: HashMap<String, u64>,    // repeat-1-distinct-2
-    pub abc: HashMap<String, u64>,    // distinct-3
-    pub a_b: HashMap<String, u64>,    // skip-1-distinct-2
-    #[allow(non_snake_case)]
-    pub a__b: HashMap<String, u64>,   // skip-2-distinct-2
-    pub abcab: HashMap<String, u64>,  // repeat-2-distinct-3
-    pub abcba: HashMap<String, u64>,  // mirror-2-distinct-3
-    pub abcdab: HashMap<String, u64>, // repeat-2-distinct-4
-    pub abcdba: HashMap<String, u64>, // mirror-2-distinct-4
-    pub ab_ab: HashMap<String, u64>,  // skip-1-repeat-2-distinct-2
-    pub ab_ba: HashMap<String, u64>,  // skip-1-mirror-2-distinct-2
-    #[allow(non_snake_case)]
-    pub ab__ab: HashMap<String, u64>, // skip-2-repeat-2-distinct-2
-    #[allow(non_snake_case)]
-    pub ab__ba: HashMap<String, u64>, // skip-2-mirror-2-distinct-2
+    pub ab: HashMap<String, u64>, // distinct-2
+
+    pub abc: HashMap<String, u64>, // distinct-3
+    pub a_b: HashMap<String, u64>, // skip-1-distinct-2
+    pub aba: HashMap<String, u64>, // repeat-1-distinct-2
+    pub cvc: HashMap<String, u64>, // consonants-and-[aeiouy]
+    pub vcv: HashMap<String, u64>, // consonants-and-[aeiouy]
+
+    pub abcd: HashMap<String, u64>, // distinct-4
+    pub a__b: HashMap<String, u64>, // skip-2-distinct-2
+    pub abab: HashMap<String, u64>, // cycle-a-distinct-2
+    pub abba: HashMap<String, u64>, // cycle-b-distinct-2
+    pub abca: HashMap<String, u64>, // cycle-a-distinct-3
+    pub abcb: HashMap<String, u64>, // cycle-b-distinct-3
+    pub cvvc: HashMap<String, u64>, // consonants-and-[aeiouy]
+    pub vccv: HashMap<String, u64>, // consonants-and-[aeiouy]
+
+    pub abcde: HashMap<String, u64>, // distinct-4
+    pub a___b: HashMap<String, u64>, // skip-2-distinct-2
+    pub cvvvc: HashMap<String, u64>, // consonants-and-[aeiouy]
+    pub ccvcc: HashMap<String, u64>, // consonants-and-[aeiouy]
+    pub vcccv: HashMap<String, u64>, // consonants-and-[aeiouy]
+    pub vvcvv: HashMap<String, u64>, // consonants-and-[aeiouy]
 }
 
 impl Corpus {
@@ -32,113 +39,130 @@ impl Corpus {
         let chars: Vec<char> = text.chars().collect();
         let len = chars.len();
 
+        let is_vowel =
+            |c: char| matches!(c.to_ascii_lowercase(), 'a' | 'e' | 'i' | 'o' | 'u' | 'y');
+
         if len >= 2 {
             for w in chars.windows(2) {
-                // ab: distinct-2
+                // ab
                 if w[0] != w[1] {
-                    let s = w.iter().collect::<String>();
-                    *self.ab.entry(s).or_insert(0) += 1;
+                    *self.ab.entry(w.iter().collect()).or_insert(0) += 1;
                 }
             }
         }
 
         if len >= 3 {
             for w in chars.windows(3) {
-                // aba: repeat-1-distinct-2
-                if w[0] == w[2] && w[0] != w[1] {
-                    let s = w.iter().collect::<String>();
-                    *self.aba.entry(s).or_insert(0) += 1;
+                // abc
+                if w[0] != w[1] && w[0] != w[2] && w[1] != w[2] {
+                    *self.abc.entry(w.iter().collect()).or_insert(0) += 1;
                 }
-
-                // abc: distinct-3
-                if w[0] != w[1] && w[1] != w[2] && w[0] != w[2] {
-                    let s = w.iter().collect::<String>();
-                    *self.abc.entry(s).or_insert(0) += 1;
-                }
-
-                // a_b: skip-1-distinct-2
+                // a_b
                 if w[0] != w[2] {
                     let s = format!("{}{}", w[0], w[2]);
                     *self.a_b.entry(s).or_insert(0) += 1;
+                }
+                // aba
+                if w[0] == w[2] && w[0] != w[1] {
+                    *self.aba.entry(w.iter().collect()).or_insert(0) += 1;
+                }
+                // cvc
+                if !is_vowel(w[0]) && is_vowel(w[1]) && !is_vowel(w[2]) {
+                    *self.cvc.entry(w.iter().collect()).or_insert(0) += 1;
+                }
+                // vcv
+                if is_vowel(w[0]) && !is_vowel(w[1]) && is_vowel(w[2]) {
+                    *self.vcv.entry(w.iter().collect()).or_insert(0) += 1;
                 }
             }
         }
 
         if len >= 4 {
             for w in chars.windows(4) {
-                // a__b: skip-2-distinct-2
+                // abcd
+                let s: std::collections::HashSet<char> = w.iter().cloned().collect();
+                if s.len() == 4 {
+                    *self.abcd.entry(w.iter().collect()).or_insert(0) += 1;
+                }
+                // a__b
                 if w[0] != w[3] {
                     let s = format!("{}{}", w[0], w[3]);
                     *self.a__b.entry(s).or_insert(0) += 1;
+                }
+                // abab
+                if w[0] == w[2] && w[1] == w[3] && w[0] != w[1] {
+                    *self.abab.entry(w.iter().collect()).or_insert(0) += 1;
+                }
+                // abba
+                if w[0] == w[3] && w[1] == w[2] && w[0] != w[1] {
+                    *self.abba.entry(w.iter().collect()).or_insert(0) += 1;
+                }
+                // abca
+                if w[0] == w[3] && (w[0] != w[1] && w[0] != w[2] && w[1] != w[2]) {
+                    *self.abca.entry(w.iter().collect()).or_insert(0) += 1;
+                }
+                // abcb
+                if w[1] == w[3] && (w[0] != w[1] && w[0] != w[2] && w[1] != w[2]) {
+                    *self.abcb.entry(w.iter().collect()).or_insert(0) += 1;
+                }
+                // cvvc
+                if !is_vowel(w[0]) && is_vowel(w[1]) && is_vowel(w[2]) && !is_vowel(w[3]) {
+                    *self.cvvc.entry(w.iter().collect()).or_insert(0) += 1;
+                }
+                // vccv
+                if is_vowel(w[0]) && !is_vowel(w[1]) && !is_vowel(w[2]) && is_vowel(w[3]) {
+                    *self.vccv.entry(w.iter().collect()).or_insert(0) += 1;
                 }
             }
         }
 
         if len >= 5 {
             for w in chars.windows(5) {
-                let are_distinct_3 = w[0] != w[1] && w[1] != w[2] && w[0] != w[2];
-                let are_distinct_2 = w[0] != w[1];
-
-                // abcab: repeat-2-distinct-3
-                if w[0] == w[3] && w[1] == w[4] && are_distinct_3 {
-                    let s = w.iter().collect::<String>();
-                    *self.abcab.entry(s).or_insert(0) += 1;
+                // abcde
+                let s: std::collections::HashSet<char> = w.iter().cloned().collect();
+                if s.len() == 5 {
+                    *self.abcde.entry(w.iter().collect()).or_insert(0) += 1;
                 }
-
-                // abcba: mirror-2-distinct-3
-                if w[0] == w[4] && w[1] == w[3] && are_distinct_3 {
-                    let s = w.iter().collect::<String>();
-                    *self.abcba.entry(s).or_insert(0) += 1;
+                // a___b
+                if w[0] != w[4] {
+                    let s = format!("{}{}", w[0], w[4]);
+                    *self.a___b.entry(s).or_insert(0) += 1;
                 }
-
-                // ab_ab: skip-1-repeat-2-distinct-2
-                if w[0] == w[3] && w[1] == w[4] && are_distinct_2 {
-                    let s = w.iter().collect::<String>();
-                    *self.ab_ab.entry(s).or_insert(0) += 1;
+                // cvvvc
+                if !is_vowel(w[0])
+                    && is_vowel(w[1])
+                    && is_vowel(w[2])
+                    && is_vowel(w[3])
+                    && !is_vowel(w[4])
+                {
+                    *self.cvvvc.entry(w.iter().collect()).or_insert(0) += 1;
                 }
-
-                // ab_ba: skip-1-mirror-2-distinct-2
-                if w[0] == w[4] && w[1] == w[3] && are_distinct_2 {
-                    let s = w.iter().collect::<String>();
-                    *self.ab_ba.entry(s).or_insert(0) += 1;
+                // ccvcc
+                if !is_vowel(w[0])
+                    && !is_vowel(w[1])
+                    && is_vowel(w[2])
+                    && !is_vowel(w[3])
+                    && !is_vowel(w[4])
+                {
+                    *self.ccvcc.entry(w.iter().collect()).or_insert(0) += 1;
                 }
-            }
-        }
-
-        if len >= 6 {
-            for w in chars.windows(6) {
-                let are_distinct_4: bool = {
-                    let mut s = std::collections::HashSet::new();
-                    s.insert(w[0]);
-                    s.insert(w[1]);
-                    s.insert(w[2]);
-                    s.insert(w[3]);
-                    s.len() == 4
-                };
-                let are_distinct_2 = w[0] != w[1];
-
-                // abcdab: repeat-2-distinct-4
-                if w[0] == w[4] && w[1] == w[5] && are_distinct_4 {
-                    let s = w.iter().collect::<String>();
-                    *self.abcdab.entry(s).or_insert(0) += 1;
+                // vcccv
+                if is_vowel(w[0])
+                    && !is_vowel(w[1])
+                    && !is_vowel(w[2])
+                    && !is_vowel(w[3])
+                    && is_vowel(w[4])
+                {
+                    *self.vcccv.entry(w.iter().collect()).or_insert(0) += 1;
                 }
-
-                // abcdba: mirror-2-distinct-4
-                if w[0] == w[5] && w[1] == w[4] && are_distinct_4 {
-                    let s = w.iter().collect::<String>();
-                    *self.abcdba.entry(s).or_insert(0) += 1;
-                }
-
-                // ab__ab: skip-2-repeat-2-distinct-2
-                if w[0] == w[4] && w[1] == w[5] && are_distinct_2 {
-                    let s = w.iter().collect::<String>();
-                    *self.ab__ab.entry(s).or_insert(0) += 1;
-                }
-
-                // ab__ba: skip-2-mirror-2-distinct-2
-                if w[0] == w[5] && w[1] == w[4] && are_distinct_2 {
-                    let s = w.iter().collect::<String>();
-                    *self.ab__ba.entry(s).or_insert(0) += 1;
+                // vvcvv
+                if is_vowel(w[0])
+                    && is_vowel(w[1])
+                    && !is_vowel(w[2])
+                    && is_vowel(w[3])
+                    && is_vowel(w[4])
+                {
+                    *self.vvcvv.entry(w.iter().collect()).or_insert(0) += 1;
                 }
             }
         }
