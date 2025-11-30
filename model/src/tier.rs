@@ -255,7 +255,7 @@ fn determine_fingering(stroke: &[Key]) -> Fingering {
     }
 }
 
-use core::Percentage;
+use core::percentage::T as Percentage;
 
 fn get_same_finger_tier(key: &Key) -> Percentage {
     use crate::finger::Finger;
