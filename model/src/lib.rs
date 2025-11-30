@@ -16,6 +16,7 @@ mod tests {
     use super::hand_finger::HandFinger;
     use super::key::Src;
     use super::key::ANSI30;
+    use core::Percentage;
 
     #[test]
     fn key_display() {
@@ -170,7 +171,7 @@ mod tests {
     #[test]
     fn test_assign_tier() {
         use super::key::Key;
-        use super::tier::{assign_tier, Tier};
+        use super::tier::assign_tier;
         use std::collections::HashMap;
 
         let keymap = crate::key::Src::Ansi30.keymap();
@@ -188,18 +189,51 @@ mod tests {
             |s: &str| -> Vec<Key> { s.chars().map(|c| char_to_key[&c].clone()).collect() };
 
         // S-tier: same-row, diff fingers, has index
-        assert_eq!(assign_tier(&get_stroke("asdf")), Some(Tier::S));
+        assert_eq!(
+            assign_tier(&get_stroke("asdf")),
+            Some(Percentage::new(1.0).unwrap())
+        );
 
         // A-tier: good-row-change-strong-fingers
-        assert_eq!(assign_tier(&get_stroke("se")), Some(Tier::A));
+        assert_eq!(
+            assign_tier(&get_stroke("se")),
+            Some(Percentage::new(0.8).unwrap())
+        );
 
         // C-tier: wide-good-row-change-weak-fingers or weak-scissors-strong-fingers
-        assert_eq!(assign_tier(&get_stroke("ed")), Some(Tier::C));
+        assert_eq!(
+            assign_tier(&get_stroke("ed")),
+            Some(Percentage::new(0.4).unwrap())
+        );
 
         // SameFinger
-        assert_eq!(assign_tier(&get_stroke("qq")), Some(Tier::F));
+        assert_eq!(
+            assign_tier(&get_stroke("qq")),
+            Some(Percentage::new(0.2).unwrap())
+        );
 
         // None for single key
         assert_eq!(assign_tier(&get_stroke("a")), None);
+    }
+
+    #[test]
+    fn test_assign_tier_coverage() {
+        use super::keyboard::Keyboard;
+        use super::tier::assign_tier;
+
+        let keymap = super::key::Src::Ansi30.keymap();
+        let keyboard = Keyboard::new(&keymap);
+
+        // Test all 2-strokes
+        for stroke in keyboard.nstrokes(2) {
+            // If assign_tier panics, the test will fail
+            assign_tier(&stroke);
+        }
+
+        // Test all 3-strokes
+        for stroke in keyboard.nstrokes(3) {
+            // If assign_tier panics, the test will fail
+            assign_tier(&stroke);
+        }
     }
 }

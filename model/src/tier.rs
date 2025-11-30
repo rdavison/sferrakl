@@ -255,18 +255,40 @@ fn determine_fingering(stroke: &[Key]) -> Fingering {
     }
 }
 
-// Examples of str
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub enum Tier {
-    S,
-    A,
-    B,
-    C,
-    D,
-    F,
+use core::Percentage;
+
+fn get_same_finger_tier(key: &Key) -> Percentage {
+    use crate::finger::Finger;
+
+    let finger_score = match key.finger {
+        Finger::M => 0, // Middle (best)
+        Finger::I => 1, // Index
+        Finger::R => 2, // Ring
+        Finger::P => 3, // Pinky (worst for repeats)
+        _ => 5,         // Thumb or other - higher penalty
+    };
+
+    let row_score = match key.row {
+        3 => 0, // ASDFG (Homerow - best)
+        2 => 1, // QWERTY (Top letter row)
+        1 => 1, // Number row (Treat same as QWERTY for now)
+        4 => 2, // ZXCVB (Bottom letter row - worst)
+        _ => 3, // Other rows (Function/Spacebar row)
+    };
+
+    let combined_score = finger_score + row_score;
+
+    match combined_score {
+        0 => Percentage::new(0.8).unwrap(), // Middle, Homerow
+        1 => Percentage::new(0.6).unwrap(), // Index, Homerow OR Middle, Top row
+        2 => Percentage::new(0.4).unwrap(), // Ring, Homerow OR Index, Top row OR Middle, Bottom row
+        3 => Percentage::new(0.2).unwrap(), // Pinky, Homerow OR Ring, Top row OR Index, Bottom row OR Middle, Other row
+        4 => Percentage::new(0.2).unwrap(), // Pinky, Top row OR Index, Bottom row OR Ring, Other row
+        _ => Percentage::new(0.0).unwrap(), // Anything worse
+    }
 }
 
-pub fn assign_tier(stroke: &[Key]) -> Option<Tier> {
+pub fn assign_tier(stroke: &[Key]) -> Option<Percentage> {
     if stroke.len() < 2 {
         return None;
     }
@@ -282,10 +304,10 @@ pub fn assign_tier(stroke: &[Key]) -> Option<Tier> {
                     let HandFinger((_, finger)) = hf_item;
                     finger == &Finger::I
                 }) {
-                    return Some(Tier::S);
+                    return Some(Percentage::new(1.0).unwrap());
                 }
             } else {
-                return Some(Tier::S);
+                return Some(Percentage::new(1.0).unwrap());
             }
         }
     }
@@ -302,48 +324,68 @@ pub fn assign_tier(stroke: &[Key]) -> Option<Tier> {
 
     let is_weak = is_weak_finger_stroke(&fingering);
 
+    let mut direct_repeat_tier: Option<Percentage> = None;
+    for (i, change) in changes.iter().enumerate() {
+        if let RowChangeType::SameFinger(distance) = change {
+            if *distance == 0.0 {
+                direct_repeat_tier = Some(get_same_finger_tier(&stroke[i]));
+                break;
+            }
+        }
+    }
+    if let Some(tier) = direct_repeat_tier {
+        return Some(tier);
+    }
+
+    // Now, check for other SameFinger (distance > 0) - these are penalized heavily as F
+    if changes
+        .iter()
+        .any(|c| matches!(c, RowChangeType::SameFinger(_)))
+    {
+        return Some(Percentage::new(0.0).unwrap());
+    }
+
     let has_good = changes.iter().any(|c| *c == RowChangeType::Good);
     let has_wide_good = changes.iter().any(|c| *c == RowChangeType::WideGood);
     let has_weak_scissor = changes.iter().any(|c| *c == RowChangeType::WeakScissor);
     let has_bad_scissor = changes.iter().any(|c| *c == RowChangeType::BadScissor);
-    let has_same_finger = changes
-        .iter()
-        .any(|c| matches!(c, RowChangeType::SameFinger(_))); // New check
-
-    if has_same_finger {
-        return Some(Tier::F); // Penalize SFB heavily
-    }
 
     if has_bad_scissor {
         if is_weak {
-            return Some(Tier::F);
+            return Some(Percentage::new(0.0).unwrap());
         } else {
-            return Some(Tier::D);
+            return Some(Percentage::new(0.2).unwrap());
         }
     }
 
     if has_weak_scissor {
         if is_weak {
-            return Some(Tier::D);
+            return Some(Percentage::new(0.2).unwrap());
         } else {
-            return Some(Tier::C);
+            return Some(Percentage::new(0.4).unwrap());
         }
     }
 
     if has_wide_good {
         if is_weak {
-            return Some(Tier::C);
+            return Some(Percentage::new(0.4).unwrap());
         } else {
-            return Some(Tier::B);
+            return Some(Percentage::new(0.6).unwrap());
         }
     }
 
     if has_good {
         if is_weak {
-            return Some(Tier::B);
+            return Some(Percentage::new(0.6).unwrap());
         } else {
-            return Some(Tier::A);
+            return Some(Percentage::new(0.8).unwrap());
         }
+    }
+
+    if changes.iter().all(|c| matches!(*c, RowChangeType::None)) {
+        // If all transitions are alternate-hand (None), consider it a good stroke.
+        // It's not S-tier (same row), but it's not penalized for same finger or bad scissors.
+        return Some(Percentage::new(0.8).unwrap());
     }
 
     panic!(
