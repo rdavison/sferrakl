@@ -4,6 +4,8 @@ pub mod finger;
 pub mod hand;
 pub mod hand_finger;
 pub mod key;
+pub mod keyboard;
+pub mod tier;
 
 #[cfg(test)]
 mod tests {
@@ -140,5 +142,61 @@ mod tests {
         assert_eq!(corpus.abab.len(), 2);
 
         assert!(corpus.abba.get("bana").is_none());
+    }
+
+    #[test]
+    fn test_nstroke_iterator() {
+        let keymap = Src::Ansi30.keymap();
+        let keyboard = super::keyboard::Keyboard::new(&keymap);
+        let keys: Vec<_> = keymap.values().cloned().collect();
+        let n = 2;
+        let mut nstrokes = keyboard.nstrokes(n);
+
+        assert_eq!(nstrokes.clone().count(), keys.len().pow(n as u32));
+
+        // Check first element
+        let first = nstrokes.next().unwrap();
+        assert_eq!(first, vec![keys[0].clone(), keys[0].clone()]);
+
+        // Check last element
+        let last = nstrokes.last().unwrap();
+        assert_eq!(last, vec![keys[keys.len() - 1].clone(), keys[keys.len() - 1].clone()]);
+    }
+
+    #[test]
+    fn test_assign_tier() {
+        use super::key::Key;
+        use super::tier::{assign_tier, Tier};
+        use std::collections::HashMap;
+
+        let keymap = crate::key::Src::Ansi30.keymap();
+        let char_to_key: HashMap<char, Key> = keymap
+            .values()
+            .map(|k| {
+                (
+                    k.code.unwrap().to_string().chars().next().unwrap(),
+                    k.clone(),
+                )
+            })
+            .collect();
+
+        let get_stroke = |s: &str| -> Vec<Key> {
+            s.chars().map(|c| char_to_key[&c].clone()).collect()
+        };
+
+        // S-tier: same-row, diff fingers, has index
+        assert_eq!(assign_tier(&get_stroke("asdf")), Some(Tier::S));
+        
+        // A-tier: good-row-change-strong-fingers
+        assert_eq!(assign_tier(&get_stroke("se")), Some(Tier::A));
+        
+        // C-tier: wide-good-row-change-weak-fingers or weak-scissors-strong-fingers
+        assert_eq!(assign_tier(&get_stroke("ed")), Some(Tier::C));
+        
+        // SameFinger
+        assert_eq!(assign_tier(&get_stroke("qq")), Some(Tier::F));
+
+        // None for single key
+        assert_eq!(assign_tier(&get_stroke("a")), None);
     }
 }

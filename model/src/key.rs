@@ -236,7 +236,19 @@ where
     }
 }
 
+impl<T> KeyMap<T> {
+    pub fn values(&self) -> impl Iterator<Item = &T> {
+        self.map.0.values()
+    }
+
+    pub fn into_values(self) -> impl Iterator<Item = T> {
+        self.map.0.into_values()
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct Key {
+    pub id: Id,
     pub hand: super::hand::Hand,
     pub finger: super::finger::Finger,
     pub row: u8,
@@ -245,7 +257,8 @@ pub struct Key {
 
 impl PartialEq for Key {
     fn eq(&self, other: &Self) -> bool {
-        self.hand == other.hand
+        self.id == other.id
+            && self.hand == other.hand
             && self.finger == other.finger
             && self.row == other.row
             && self.code == other.code
@@ -256,6 +269,7 @@ impl Eq for Key {}
 
 impl std::hash::Hash for Key {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
         self.hand.hash(state);
         self.finger.hash(state);
         self.row.hash(state);
@@ -279,10 +293,32 @@ impl Id {
         let row = self.default_row();
         let code = self.to_code();
         Key {
+            id: self,
             hand,
             finger,
             row,
             code,
+        }
+    }
+
+    #[rustfmt::skip]
+    pub fn alternate_fingers(self) -> Vec<Finger> {
+        match self {
+            // Left hand index finger alternates
+            Id::F | Id::G | Id::V | Id::B => vec![Finger::M],
+            // Left hand middle finger alternates
+            Id::D | Id::C => vec![Finger::I],
+            // Left hand ring finger alternates
+            Id::S | Id::X => vec![Finger::M],
+
+            // Right hand index finger alternates
+            Id::J | Id::H | Id::M | Id::N => vec![Finger::M],
+            // Right hand middle finger alternates
+            Id::K | Id::Comm => vec![Finger::I],
+            // Right hand ring finger alternates
+            Id::L | Id::Prd => vec![Finger::M],
+
+            _ => vec![],
         }
     }
 }

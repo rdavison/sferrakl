@@ -9,6 +9,12 @@ pub enum Finger {
     T, // Thumb
 }
 
+impl Finger {
+    pub fn is_strong(&self) -> bool {
+        matches!(self, Finger::R | Finger::M | Finger::I)
+    }
+}
+
 impl fmt::Display for Finger {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let finger_char = match self {
