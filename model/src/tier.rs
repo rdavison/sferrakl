@@ -197,16 +197,11 @@ fn combine(f1: Fingering, f2: Fingering, s1: &[Key], s2: &[Key]) -> Fingering {
 fn determine_fingering(stroke: &[Key]) -> Fingering {
     match stroke.len() {
         0 => vec![],
-
         1 => vec![HandFinger((stroke[0].hand, stroke[0].finger))],
-
         2 => {
             let key1 = &stroke[0];
-
             let key2 = &stroke[1];
-
             let hf1 = HandFinger((key1.hand, key1.finger));
-
             let hf2 = HandFinger((key2.hand, key2.finger));
 
             // No SFB, use default fingering
@@ -216,7 +211,6 @@ fn determine_fingering(stroke: &[Key]) -> Fingering {
 
             // SFB detected, try to resolve it.
             let alt_fingers1 = key1.id.alternate_fingers();
-
             let alt_fingers2 = key2.id.alternate_fingers();
 
             // Create a list of candidates
@@ -225,7 +219,6 @@ fn determine_fingering(stroke: &[Key]) -> Fingering {
             // Add resolutions by changing finger for key2
             for &alt_finger in &alt_fingers2 {
                 let new_hf2 = HandFinger((key2.hand, alt_finger));
-
                 if hf1 != new_hf2 {
                     candidates.push((vec![hf1, new_hf2], alt_finger.is_strong()));
                 }
@@ -234,7 +227,6 @@ fn determine_fingering(stroke: &[Key]) -> Fingering {
             // Add resolutions by changing finger for key1
             for &alt_finger in &alt_fingers1 {
                 let new_hf1 = HandFinger((key1.hand, alt_finger));
-
                 if new_hf1 != hf2 {
                     candidates.push((vec![new_hf1, hf2], alt_finger.is_strong()));
                 }
@@ -253,11 +245,8 @@ fn determine_fingering(stroke: &[Key]) -> Fingering {
 
         n => {
             let (s1, s2_slice) = stroke.split_at(n - 1);
-
             let f1 = determine_fingering(s1);
-
             let f2 = determine_fingering(s2_slice);
-
             combine(f1, f2, s1, s2_slice)
         }
     }
@@ -356,4 +345,3 @@ pub fn assign_tier(stroke: &[Key]) -> Option<Tier> {
         stroke.iter().map(|k| k.code).collect::<Vec<_>>()
     );
 }
-
