@@ -1,5 +1,6 @@
 use super::finger::Finger;
 use super::hand::Hand;
+use super::keyboard::ANSI;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 
@@ -150,9 +151,9 @@ impl Id {
             | _4   | _5   | _6   | _7
             | R    | T    | Y    | U
             | F    | G    | H    | J
-            | V    | B    | N    | M => Finger::I,
+            | V    | B | N | M => Finger::I,
             // Thumb (T)
-            Fn   | Lctl | Lopt | Lcmd | Spc  | Rcmd | Ropt => Finger::T,
+            Fn | Lctl | Lopt | Lcmd | Spc | Rcmd | Ropt => Finger::T,
             // Arrows (mixed)
             Left => Finger::I,
             Rght => Finger::R,
@@ -190,27 +191,27 @@ pub struct KeyMap<T> {
 
 impl Display for KeyMap<Key> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut out = String::with_capacity(80);
-        out.push_str(&format!("Src: {}", self.src));
+        let mut out = String::with_capacity(256);
+        out.push_str(&format!("Src: {}\n", self.src));
 
-        let Map(map) = &self.map;
-        let mut keys: Vec<_> = map.values().collect();
-        keys.sort_by(|a, b| a.id.cmp(&b.id));
+        // Use the ANSI constant for display order
+        for &id in ANSI.iter() {
+            if let Some(key) = self.map.0.get(&id) {
+                out.push_str(&format!("{}", key));
 
-        for (i, key) in keys.iter().enumerate() {
-            if (i) % 10 == 0 {
-                out.push('\n');
+                // Add spacing and newlines for keyboard layout
+                match id {
+                    // QWERTY row (10 keys)
+                    Id::P => out.push_str(" \n "),
+                    // ASDFG row (11 keys)
+                    Id::Quot => out.push_str(" \n  "),
+                    // ZXCVB row (10 keys)
+                    Id::Slsh => out.push_str(" \n   "),
+                    _ => out.push(' '), // default space
+                }
             }
-            out.push_str(&format!("{} ", key));
         }
-
-        let out = out
-            .lines()
-            .map(|line| line.trim_end())
-            .collect::<Vec<_>>()
-            .join("\n");
-
-        write!(f, "{}", out)
+        write!(f, "{}", out.trim_end()) // Trim trailing space
     }
 }
 
