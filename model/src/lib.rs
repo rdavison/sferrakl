@@ -9,33 +9,26 @@ pub mod tier;
 
 #[cfg(test)]
 mod tests {
-
+    use super::key;
     use super::bigram;
     use super::finger::Finger;
     use super::hand::Hand;
     use super::hand_finger::HandFinger;
     use super::key::Src;
-    use super::key::ANSI30;
     use core::percentage::T as Percentage;
 
     #[test]
-    fn key_display() {
-        let actual = Src::Ansi30.keymap().to_string();
-        let expected = indoc::indoc! {"
-            Src: Ansi30
-            q w e r t y u i o p
-            a s d f g h j k l ;
-            z x c v b n m , . /
-        "}
-        .trim_end();
-        assert_eq!(actual, expected);
-    }
+        fn key_display() {
+            let actual = Src::Ansi.keymap().to_string();
+                    let expected = "Src: Ansi\n` 1 2 3 4 5 6 7 8 9\n0 - = q w e r t y u\ni o p [ ] a s d f g\nh j k l ; ' z x c v\nb n m , . /";
+            assert_eq!(actual, expected);
+        }
 
     #[test]
     fn bigram_init() {
-        let bigram_map = bigram::Map::init(Src::Ansi30, &|_, _| 1.0f64);
+        let bigram_map = bigram::Map::init(Src::Ansi, &|_, _| 1.0f64);
         let bigram::Map(map) = bigram_map;
-        assert_eq!(map.len(), ANSI30.len() * ANSI30.len());
+        assert_eq!(map.len(), key::ANSI.len() * key::ANSI.len());
     }
 
     #[test]
@@ -64,7 +57,7 @@ mod tests {
 
     #[test]
     fn test_to_hand_finger_map() {
-        let key_map = Src::Ansi30.keymap();
+        let key_map = Src::Ansi.keymap();
         let hand_finger_map = key_map.to_hand_finger_map();
 
         // Check some specific keys
@@ -96,12 +89,12 @@ mod tests {
                 total_keys += keys_set.len();
             }
         }
-        assert_eq!(total_keys, ANSI30.len());
+        assert_eq!(total_keys, key::ANSI.len());
     }
 
     #[test]
     fn test_to_hand_finger_tuple_map() {
-        let key_map = Src::Ansi30.keymap();
+        let key_map = Src::Ansi.keymap();
         let hand_finger_map = key_map.to_hand_finger_tuple_map();
 
         // Check some specific keys
@@ -123,7 +116,7 @@ mod tests {
         for (_, keys_set) in hand_finger_map.iter() {
             total_keys += keys_set.len();
         }
-        assert_eq!(total_keys, ANSI30.len());
+        assert_eq!(total_keys, key::ANSI.len());
     }
 
     #[test]
@@ -148,7 +141,7 @@ mod tests {
 
     #[test]
     fn test_nstroke_iterator() {
-        let keymap = Src::Ansi30.keymap();
+        let keymap = Src::Ansi.keymap();
         let keyboard = super::keyboard::Keyboard::new(&keymap);
         let keys: Vec<_> = keymap.values().cloned().collect();
         let n = 2;
@@ -174,7 +167,7 @@ mod tests {
         use super::tier::assign_tier;
         use std::collections::HashMap;
 
-        let keymap = crate::key::Src::Ansi30.keymap();
+        let keymap = crate::key::Src::Ansi.keymap();
         let char_to_key: HashMap<char, Key> = keymap
             .values()
             .map(|k| {
@@ -221,7 +214,7 @@ mod tests {
         use super::keyboard::Keyboard;
         use super::tier::assign_tier;
 
-        let keymap = super::key::Src::Ansi30.keymap();
+        let keymap = super::key::Src::Ansi.keymap();
         let keyboard = Keyboard::new(&keymap);
 
         // Test all 2-strokes

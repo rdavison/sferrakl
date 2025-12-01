@@ -1,4 +1,4 @@
-use crate::key::{Id, Src, ANSI30};
+use crate::key::{Id, Src, ANSI};
 use std::collections::HashMap;
 
 pub struct Map<T>(pub HashMap<(Id, Id), T>);
@@ -6,7 +6,9 @@ pub struct Map<T>(pub HashMap<(Id, Id), T>);
 impl<T> Map<T> {
     pub fn init(src: Src, f: &dyn Fn(Id, Id) -> T) -> Self {
         let key_ids = match src {
-            Src::Ansi30 => &ANSI30,
+            Src::Ansi => &ANSI,
+            Src::Iso => &ANSI,
+            Src::Jis => &ANSI,
         };
 
         let mut map = HashMap::new();

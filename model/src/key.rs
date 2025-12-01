@@ -1,10 +1,11 @@
 use super::finger::Finger;
 use super::hand::Hand;
+use super::keyboard::Keyboard;
 use std::collections::{HashMap, HashSet};
 use std::fmt::Display;
 
 #[rustfmt::skip]
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Id {
     Esc,  F1,   F2,   F3,   F4,   F5,  F6,   F7,   F8,   F9,   F10,  F11,  F12, Powr,
     Grav, _1,   _2,   _3,   _4,   _5,  _6,   _7,   _8,   _9,   _0,   Hyph, Eq, Bspc,
@@ -14,25 +15,19 @@ pub enum Id {
           Fn,   Lctl, Lopt, Lcmd, Spc, Rcmd, Ropt, Left, Down, Up,   Rght,
 }
 
-#[rustfmt::skip]
-pub const ANSI30: [Id; 30] = {
-    use Id::*;
-    [
-        Q,    W,    E,    R,    T,    Y,    U,    I,    O,    P,
-        A,    S,    D,    F,    G,    H,    J,    K,    L,    Semi,
-        Z,    X,    C,    V,    B,    N,    M,    Comm, Prd,  Slsh,
-    ]
-};
-
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Src {
-    Ansi30,
+    Ansi,
+    Iso,
+    Jis,
 }
 
 impl std::fmt::Display for Src {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Src::Ansi30 => write!(f, "Ansi30"),
+            Src::Ansi => write!(f, "Ansi"),
+            Src::Iso => write!(f, "Iso"),
+            Src::Jis => write!(f, "Jis"),
         }
     }
 }
@@ -103,7 +98,7 @@ impl Id {
             Hyph => Some('-'),
             Eq => Some('='),
             Obrk => Some('['),
-            Cbrk => Some(']'),
+            Cbrk => Some(']') ,
             Bsl => Some('\\'),
             Semi => Some(';'),
             Quot => Some('\''),
@@ -211,22 +206,20 @@ pub struct KeyMap<T> {
     map: Map<T>,
 }
 
-impl<T> Display for KeyMap<T>
-where
-    T: Display,
-{
+impl Display for KeyMap<Key> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut out = String::with_capacity(80);
         out.push_str(&format!("Src: {}", self.src));
 
-        for (i, &id) in ANSI30.iter().enumerate() {
+        let Map(map) = &self.map;
+        let mut keys: Vec<_> = map.values().collect();
+        keys.sort_by(|a, b| a.id.cmp(&b.id));
+
+        for (i, key) in keys.iter().enumerate() {
             if (i) % 10 == 0 {
                 out.push('\n');
             }
-            let Map(map) = &self.map;
-            if let Some(code) = map.get(&id) {
-                out.push_str(&format!("{} ", code));
-            }
+            out.push_str(&format!("{} ", key));
         }
 
         let out = out
@@ -251,6 +244,40 @@ impl<T> KeyMap<T> {
     }
 }
 
+#[rustfmt::skip]
+pub const ANSI: [Id; 46] = {
+    use Id::*;
+    [
+        Q, W, E, R, T, Y, U, I, O, P, Obrk, Cbrk,
+        A, S, D, F, G, H, J, K, L, Semi, Quot,
+        Z, X, C, V, B, N, M, Comm, Prd, Slsh,
+        Grav, _1, _2, _3, _4, _5, _6, _7, _8, _9, _0, Hyph, Eq,
+    ]
+};
+
+impl Src {
+    pub fn keymap(&self) -> KeyMap<Key> {
+        let ids = match self {
+            Src::Ansi => ANSI.to_vec(),
+            Src::Iso => ANSI.to_vec(),
+            Src::Jis => ANSI.to_vec(),
+        };
+        let map = Map(
+            ids.iter()
+                .map(|id| {
+                    let key = id.key();
+                    (key.id, key)
+                })
+                .collect(),
+        );
+        KeyMap { src: *self, map }
+    }
+    pub fn keyboard(&self) -> Keyboard {
+        let keymap = self.keymap();
+        Keyboard::new(&keymap)
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Key {
     pub id: Id,
@@ -258,6 +285,14 @@ pub struct Key {
     pub finger: super::finger::Finger,
     pub row: u8,
     pub code: Option<Code>,
+    pub x: f32,
+    pub y: f32,
+}
+
+impl Key {
+    pub fn distance(&self, other: &Self) -> f32 {
+        ((self.x - other.x).powi(2) + (self.y - other.y).powi(2)).sqrt()
+    }
 }
 
 impl PartialEq for Key {
@@ -267,6 +302,8 @@ impl PartialEq for Key {
             && self.finger == other.finger
             && self.row == other.row
             && self.code == other.code
+            && self.x.to_bits() == other.x.to_bits()
+            && self.y.to_bits() == other.y.to_bits()
     }
 }
 
@@ -279,6 +316,8 @@ impl std::hash::Hash for Key {
         self.finger.hash(state);
         self.row.hash(state);
         self.code.hash(state);
+        self.x.to_bits().hash(state);
+        self.y.to_bits().hash(state);
     }
 }
 
@@ -297,12 +336,28 @@ impl Id {
         let finger = self.default_finger();
         let row = self.default_row();
         let code = self.to_code();
+        let (x, y) = self.default_coords();
         Key {
             id: self,
             hand,
             finger,
             row,
             code,
+            x,
+            y,
+        }
+    }
+
+    #[rustfmt::skip]
+    pub fn default_coords(self) -> (f32, f32) {
+        use Id::*;
+        match self {
+            Esc  => (0.0, 0.0), F1 => (1.0, 0.0), F2 => (2.0, 0.0), F3 => (3.0, 0.0), F4 => (4.0, 0.0), F5 => (5.0, 0.0), F6 => (6.0, 0.0), F7 => (7.0, 0.0), F8 => (8.0, 0.0), F9 => (9.0, 0.0), F10 => (11.0, 0.0), F11 => (12.0, 0.0), F12 => (13.0, 0.0), Powr => (14.0, 0.0),
+            Grav => (0.0, 1.0), _1 => (1.0, 1.0), _2 => (2.0, 1.0), _3 => (3.0, 1.0), _4 => (4.0, 1.0), _5 => (5.0, 1.0), _6 => (6.0, 1.0), _7 => (7.0, 1.0), _8 => (8.0, 1.0), _9 => (9.0, 1.0), _0 => (10.0, 1.0), Hyph => (11.0, 1.0), Eq => (12.0, 1.0), Bspc => (13.0, 1.0),
+            Tab  => (0.0, 2.0), Q => (1.0, 2.0), W => (2.0, 2.0), E => (3.0, 2.0), R => (4.0, 2.0), T => (5.0, 2.0), Y => (6.0, 2.0), U => (7.0, 2.0), I => (8.0, 2.0), O => (9.0, 2.0), P => (10.0, 2.0), Obrk => (11.0, 2.0), Cbrk => (12.0, 2.0), Bsl => (13.0, 2.0),
+            Caps => (0.0, 3.0), A => (1.0, 3.0), S => (2.0, 3.0), D => (3.0, 3.0), F => (4.0, 3.0), G => (5.0, 3.0), H => (6.0, 3.0), J => (7.0, 3.0), K => (8.0, 3.0), L => (9.0, 3.0), Semi => (10.0, 3.0), Quot => (11.0, 3.0), Entr => (12.0, 3.0),
+            Lsft => (0.0, 4.0), Z => (1.0, 4.0), X => (2.0, 4.0), C => (3.0, 4.0), V => (4.0, 4.0), B => (5.0, 4.0), N => (6.0, 4.0), M => (7.0, 4.0), Comm => (8.0, 4.0), Prd => (9.0, 4.0), Slsh => (10.0, 4.0), Rsft => (11.0, 4.0),
+            Fn => (0.0, 5.0), Lctl => (1.0, 5.0), Lopt => (2.0, 5.0), Lcmd => (3.0, 5.0), Spc => (4.0, 5.0), Rcmd => (5.0, 5.0), Ropt => (6.0, 5.0), Left => (7.0, 5.0), Down => (8.0, 5.0), Up => (9.0, 5.0), Rght => (10.0, 5.0),
         }
     }
 
@@ -325,22 +380,6 @@ impl Id {
 
             _ => vec![],
         }
-    }
-}
-
-impl Src {
-    pub fn keymap(self) -> KeyMap<Key> {
-        let mut map = HashMap::with_capacity(ANSI30.len());
-        let map = Map(match self {
-            Src::Ansi30 => {
-                for &id in ANSI30.iter() {
-                    let key = id.key();
-                    map.insert(id, key);
-                }
-                map
-            }
-        });
-        KeyMap { src: self, map }
     }
 }
 
