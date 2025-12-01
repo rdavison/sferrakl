@@ -9,20 +9,20 @@ pub mod tier;
 
 #[cfg(test)]
 mod tests {
-    use super::key;
     use super::bigram;
     use super::finger::Finger;
     use super::hand::Hand;
     use super::hand_finger::HandFinger;
+    use super::key;
     use super::key::Src;
     use core::percentage::T as Percentage;
 
     #[test]
-        fn key_display() {
-            let actual = Src::Ansi.keymap().to_string();
-                    let expected = "Src: Ansi\n` 1 2 3 4 5 6 7 8 9\n0 - = q w e r t y u\ni o p [ ] a s d f g\nh j k l ; ' z x c v\nb n m , . /";
-            assert_eq!(actual, expected);
-        }
+    fn key_display() {
+        let actual = Src::Ansi.keymap().to_string();
+        let expected = "Src: Ansi\n` 1 2 3 4 5 6 7 8 9\n0 - = q w e r t y u\ni o p [ ] a s d f g\nh j k l ; ' z x c v\nb n m , . /";
+        assert_eq!(actual, expected);
+    }
 
     #[test]
     fn bigram_init() {
