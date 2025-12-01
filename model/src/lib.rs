@@ -13,8 +13,8 @@ mod tests {
     use super::finger::Finger;
     use super::hand::Hand;
     use super::hand_finger::HandFinger;
-    use super::key;
-    use super::key::Src;
+    
+    use super::keyboard::{ANSI, Src};
     use core::percentage::T as Percentage;
 
     #[test]
@@ -28,7 +28,7 @@ mod tests {
     fn bigram_init() {
         let bigram_map = bigram::Map::init(Src::Ansi, &|_, _| 1.0f64);
         let bigram::Map(map) = bigram_map;
-        assert_eq!(map.len(), key::ANSI.len() * key::ANSI.len());
+        assert_eq!(map.len(), ANSI.len() * ANSI.len());
     }
 
     #[test]
@@ -89,7 +89,7 @@ mod tests {
                 total_keys += keys_set.len();
             }
         }
-        assert_eq!(total_keys, key::ANSI.len());
+        assert_eq!(total_keys, ANSI.len());
     }
 
     #[test]
@@ -116,7 +116,7 @@ mod tests {
         for (_, keys_set) in hand_finger_map.iter() {
             total_keys += keys_set.len();
         }
-        assert_eq!(total_keys, key::ANSI.len());
+        assert_eq!(total_keys, ANSI.len());
     }
 
     #[test]
@@ -167,7 +167,7 @@ mod tests {
         use super::tier::assign_tier;
         use std::collections::HashMap;
 
-        let keymap = crate::key::Src::Ansi.keymap();
+        let keymap = Src::Ansi.keymap();
         let char_to_key: HashMap<char, Key> = keymap
             .values()
             .map(|k| {
@@ -214,7 +214,7 @@ mod tests {
         use super::keyboard::Keyboard;
         use super::tier::assign_tier;
 
-        let keymap = super::key::Src::Ansi.keymap();
+        let keymap = Src::Ansi.keymap();
         let keyboard = Keyboard::new(&keymap);
 
         // Test all 2-strokes

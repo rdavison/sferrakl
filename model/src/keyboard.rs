@@ -1,4 +1,58 @@
-use crate::key::{Key, KeyMap};
+use crate::key::{Id, Key, KeyMap, Map};
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+pub enum Src {
+    Ansi,
+    Iso,
+    Jis,
+}
+
+impl std::fmt::Display for Src {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Src::Ansi => write!(f, "Ansi"),
+            Src::Iso => write!(f, "Iso"),
+            Src::Jis => write!(f, "Jis"),
+        }
+    }
+}
+
+#[rustfmt::skip]
+pub const ANSI: [Id; 46] = {
+    use Id::*;
+    [
+        Q, W, E, R, T, Y, U, I, O, P, Obrk, Cbrk,
+        A, S, D, F, G, H, J, K, L, Semi, Quot,
+        Z, X, C, V, B, N, M, Comm, Prd, Slsh,
+        Grav, _1, _2, _3, _4, _5, _6, _7, _8, _9, _0, Hyph, Eq,
+    ]
+};
+
+impl Src {
+    pub fn keymap(&self) -> KeyMap<Key> {
+        let ids = match self {
+            Src::Ansi => ANSI.to_vec(),
+            Src::Iso => ANSI.to_vec(),
+            Src::Jis => ANSI.to_vec(),
+        };
+        let map = Map(
+            ids.iter()
+                .map(|id| {
+                    let key = id.key();
+                    (key.id, key)
+                })
+                .collect(),
+        );
+        KeyMap {
+            src: *self,
+            map,
+        }
+    }
+    pub fn keyboard(&self) -> Keyboard {
+        let keymap = self.keymap();
+        Keyboard::new(&keymap)
+    }
+}
 
 pub struct Keyboard {
     keys: Vec<Key>,

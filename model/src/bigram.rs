@@ -1,4 +1,5 @@
-use crate::key::{Id, Src, ANSI};
+use crate::key::Id;
+use crate::keyboard::{ANSI, Src};
 use std::collections::HashMap;
 
 pub struct Map<T>(pub HashMap<(Id, Id), T>);
