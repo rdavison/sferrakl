@@ -21,10 +21,10 @@ impl std::fmt::Display for Src {
 pub const ANSI: [Id; 46] = {
     use Id::*;
     [
-        Q, W, E, R, T, Y, U, I, O, P, Obrk, Cbrk,
-        A, S, D, F, G, H, J, K, L, Semi, Quot,
-        Z, X, C, V, B, N, M, Comm, Prd, Slsh,
         Grav, _1, _2, _3, _4, _5, _6, _7, _8, _9, _0, Hyph, Eq,
+               Q, W, E, R, T, Y, U, I, O, P, Obrk, Cbrk,
+                A, S, D, F, G, H, J, K, L, Semi, Quot,
+                 Z, X, C, V, B, N, M, Comm, Prd, Slsh,
     ]
 };
 
