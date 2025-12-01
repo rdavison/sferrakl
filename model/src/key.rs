@@ -14,8 +14,6 @@ pub enum Id {
           Fn,   Lctl, Lopt, Lcmd, Spc, Rcmd, Ropt, Left, Down, Up,   Rght,
 }
 
-
-
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Code(char);
 

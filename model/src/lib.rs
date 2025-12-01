@@ -13,8 +13,8 @@ mod tests {
     use super::finger::Finger;
     use super::hand::Hand;
     use super::hand_finger::HandFinger;
-    
-    use super::keyboard::{ANSI, Src};
+
+    use super::keyboard::{Src, ANSI};
     use core::percentage::T as Percentage;
 
     #[test]

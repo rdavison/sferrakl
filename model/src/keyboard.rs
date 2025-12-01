@@ -35,18 +35,14 @@ impl Src {
             Src::Iso => ANSI.to_vec(),
             Src::Jis => ANSI.to_vec(),
         };
-        let map = Map(
-            ids.iter()
-                .map(|id| {
-                    let key = id.key();
-                    (key.id, key)
-                })
-                .collect(),
-        );
-        KeyMap {
-            src: *self,
-            map,
-        }
+        let map = Map(ids
+            .iter()
+            .map(|id| {
+                let key = id.key();
+                (key.id, key)
+            })
+            .collect());
+        KeyMap { src: *self, map }
     }
     pub fn keyboard(&self) -> Keyboard {
         let keymap = self.keymap();
