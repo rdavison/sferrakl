@@ -98,7 +98,7 @@ impl Id {
             Hyph => Some('-'),
             Eq => Some('='),
             Obrk => Some('['),
-            Cbrk => Some(']') ,
+            Cbrk => Some(']'),
             Bsl => Some('\\'),
             Semi => Some(';'),
             Quot => Some('\''),
@@ -262,14 +262,13 @@ impl Src {
             Src::Iso => ANSI.to_vec(),
             Src::Jis => ANSI.to_vec(),
         };
-        let map = Map(
-            ids.iter()
-                .map(|id| {
-                    let key = id.key();
-                    (key.id, key)
-                })
-                .collect(),
-        );
+        let map = Map(ids
+            .iter()
+            .map(|id| {
+                let key = id.key();
+                (key.id, key)
+            })
+            .collect());
         KeyMap { src: *self, map }
     }
     pub fn keyboard(&self) -> Keyboard {
