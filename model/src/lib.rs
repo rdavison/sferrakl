@@ -129,7 +129,7 @@ mod tests {
     #[test]
     fn test_corpus_processing() {
         let text = "banana";
-        let mut corpus = super::corpus::Corpus::new();
+        let mut corpus = super::corpus::Corpus::<u64>::new();
         corpus.process_text(text);
 
         assert_eq!(*corpus.cvc.get("ban").unwrap(), 1);

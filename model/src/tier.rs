@@ -6,6 +6,12 @@ use std::collections::HashSet;
 pub type Fingering = Vec<HandFinger>;
 
 #[derive(Debug)]
+struct FingeredStroke<'a> {
+    stroke: &'a [Key],
+    fingering: Fingering,
+}
+
+#[derive(Debug)]
 enum RowChangeType {
     Good,
     WideGood,
@@ -125,133 +131,152 @@ fn is_same_row(stroke: &[Key]) -> bool {
     stroke.iter().all(|k| k.row == first_row)
 }
 
-fn combine(f1: Fingering, f2: Fingering, s1: &[Key], s2: &[Key]) -> Fingering {
-    if f1.is_empty() {
-        return f2;
-    }
+fn combine<'a>(fs1: FingeredStroke<'a>, fs2: FingeredStroke<'a>) -> FingeredStroke<'a> {
+    let f1 = fs1.fingering;
+    let s1 = fs1.stroke;
+    let f2 = fs2.fingering;
+    let s2 = fs2.stroke;
 
-    if f2.is_empty() {
-        return f1;
-    }
+    let fingering = if f1.is_empty() {
+        f2
+    } else if f2.is_empty() {
+        f1
+    } else {
+        let last_hf_f1 = f1
+            .last()
+            .expect("f1 should not be empty due to prior check");
 
-    let last_hf_f1 = f1
-        .last()
-        .expect("f1 should not be empty due to prior check");
+        let first_hf_f2 = f2
+            .first()
+            .expect("f2 should not be empty due to prior check");
 
-    let first_hf_f2 = f2
-        .first()
-        .expect("f2 should not be empty due to prior check");
+        if last_hf_f1 != first_hf_f2 {
+            [f1, f2].concat()
+        } else {
+            // SFB detected between the two strokes.
+            let key1 = &s1[s1.len() - 1];
+            let key2 = &s2[0];
 
-    if last_hf_f1 != first_hf_f2 {
-        return [f1, f2].concat();
-    }
+            // Option 1: Try to resolve by changing key2's finger
+            let mut candidates2 = key2
+                .id
+                .alternate_fingers()
+                .into_iter()
+                .filter(|alt| HandFinger((key2.hand, *alt)) != *last_hf_f1)
+                .collect::<Vec<_>>();
 
-    // SFB detected between the two strokes.
-    let key1 = &s1[s1.len() - 1];
-    let key2 = &s2[0];
+            candidates2.sort_by_key(|a| !a.is_strong());
 
-    // Option 1: Try to resolve by changing key2's finger
-    let mut candidates2 = key2
-        .id
-        .alternate_fingers()
-        .into_iter()
-        .filter(|alt| HandFinger((key2.hand, *alt)) != *last_hf_f1)
-        .collect::<Vec<_>>();
+            if let Some(alt) = candidates2.first() {
+                let mut new_f2 = f2.clone();
+                new_f2[0] = HandFinger((key2.hand, *alt));
+                [f1, new_f2].concat()
+            } else {
+                // Option 2: Try to resolve by changing key1's finger
+                let mut candidates1 = key1
+                    .id
+                    .alternate_fingers()
+                    .into_iter()
+                    .filter(|alt| HandFinger((key1.hand, *alt)) != *first_hf_f2)
+                    .collect::<Vec<_>>();
 
-    candidates2.sort_by_key(|a| !a.is_strong());
+                candidates1.sort_by_key(|a| !a.is_strong());
 
-    if let Some(alt) = candidates2.first() {
-        let mut new_f2 = f2.clone();
-
-        new_f2[0] = HandFinger((key2.hand, *alt));
-
-        return [f1, new_f2].concat();
-    }
-
-    // Option 2: Try to resolve by changing key1's finger
-    let mut candidates1 = key1
-        .id
-        .alternate_fingers()
-        .into_iter()
-        .filter(|alt| HandFinger((key1.hand, *alt)) != *first_hf_f2)
-        .collect::<Vec<_>>();
-
-    candidates1.sort_by_key(|a| !a.is_strong());
-
-    if let Some(alt) = candidates1.first() {
-        if f1.len() > 1 {
-            // this alt creates a new SFB
-            if f1[f1.len() - 2] == HandFinger((key1.hand, *alt)) {
-                // Cannot resolve
-                return [f1, f2].concat();
+                if let Some(alt) = candidates1.first() {
+                    if f1.len() > 1 {
+                        // this alt creates a new SFB
+                        if f1[f1.len() - 2] == HandFinger((key1.hand, *alt)) {
+                            // Cannot resolve
+                            [f1, f2].concat()
+                        } else {
+                            let mut new_f1 = f1.clone();
+                            new_f1[f1.len() - 1] = HandFinger((key1.hand, *alt));
+                            [new_f1, f2].concat()
+                        }
+                    } else {
+                        let mut new_f1 = f1.clone();
+                        new_f1[f1.len() - 1] = HandFinger((key1.hand, *alt));
+                        [new_f1, f2].concat()
+                    }
+                } else {
+                    // Cannot resolve
+                    [f1, f2].concat()
+                }
             }
         }
+    };
 
-        let mut new_f1 = f1.clone();
+    // This is safe because this function is only called from `determine_fingering`
+    // with adjacent slices from `split_at`, which guarantees they are contiguous.
+    let stroke = unsafe {
+        std::slice::from_raw_parts(fs1.stroke.as_ptr(), fs1.stroke.len() + fs2.stroke.len())
+    };
 
-        new_f1[f1.len() - 1] = HandFinger((key1.hand, *alt));
-
-        return [new_f1, f2].concat();
-    }
-
-    // Cannot resolve
-    [f1, f2].concat()
+    FingeredStroke { stroke, fingering }
 }
 
-fn determine_fingering(stroke: &[Key]) -> Fingering {
+fn determine_fingering<'a>(stroke: &'a [Key]) -> FingeredStroke<'a> {
     match stroke.len() {
-        0 => vec![],
-        1 => vec![HandFinger((stroke[0].hand, stroke[0].finger))],
+        0 => FingeredStroke {
+            stroke,
+            fingering: vec![],
+        },
+        1 => FingeredStroke {
+            stroke,
+            fingering: vec![HandFinger((stroke[0].hand, stroke[0].finger))],
+        },
         2 => {
-            let key1 = &stroke[0];
-            let key2 = &stroke[1];
-            let hf1 = HandFinger((key1.hand, key1.finger));
-            let hf2 = HandFinger((key2.hand, key2.finger));
+            let fingering = {
+                let key1 = &stroke[0];
+                let key2 = &stroke[1];
+                let hf1 = HandFinger((key1.hand, key1.finger));
+                let hf2 = HandFinger((key2.hand, key2.finger));
 
-            // No SFB, use default fingering
-            if hf1 != hf2 {
-                return vec![hf1, hf2];
-            }
+                // No SFB, use default fingering
+                if hf1 != hf2 {
+                    vec![hf1, hf2]
+                } else {
+                    // SFB detected, try to resolve it.
+                    let alt_fingers1 = key1.id.alternate_fingers();
+                    let alt_fingers2 = key2.id.alternate_fingers();
 
-            // SFB detected, try to resolve it.
-            let alt_fingers1 = key1.id.alternate_fingers();
-            let alt_fingers2 = key2.id.alternate_fingers();
+                    // Create a list of candidates
+                    let mut candidates = vec![];
 
-            // Create a list of candidates
-            let mut candidates = vec![];
+                    // Add resolutions by changing finger for key2
+                    for &alt_finger in &alt_fingers2 {
+                        let new_hf2 = HandFinger((key2.hand, alt_finger));
+                        if hf1 != new_hf2 {
+                            candidates.push((vec![hf1, new_hf2], alt_finger.is_strong()));
+                        }
+                    }
 
-            // Add resolutions by changing finger for key2
-            for &alt_finger in &alt_fingers2 {
-                let new_hf2 = HandFinger((key2.hand, alt_finger));
-                if hf1 != new_hf2 {
-                    candidates.push((vec![hf1, new_hf2], alt_finger.is_strong()));
+                    // Add resolutions by changing finger for key1
+                    for &alt_finger in &alt_fingers1 {
+                        let new_hf1 = HandFinger((key1.hand, alt_finger));
+                        if new_hf1 != hf2 {
+                            candidates.push((vec![new_hf1, hf2], alt_finger.is_strong()));
+                        }
+                    }
+
+                    // Sort candidates: prefer strong fingers
+                    candidates.sort_by_key(|(_, is_strong)| !is_strong);
+
+                    if let Some((fingering_vec, _)) = candidates.first() {
+                        fingering_vec.clone()
+                    } else {
+                        // Cannot resolve. Return the SFB.
+                        vec![hf1, hf2]
+                    }
                 }
-            }
-
-            // Add resolutions by changing finger for key1
-            for &alt_finger in &alt_fingers1 {
-                let new_hf1 = HandFinger((key1.hand, alt_finger));
-                if new_hf1 != hf2 {
-                    candidates.push((vec![new_hf1, hf2], alt_finger.is_strong()));
-                }
-            }
-
-            // Sort candidates: prefer strong fingers
-            candidates.sort_by_key(|(_, is_strong)| !is_strong);
-
-            if let Some((fingering_vec, _)) = candidates.first() {
-                return fingering_vec.clone();
-            }
-
-            // Cannot resolve. Return the SFB.
-            vec![hf1, hf2]
+            };
+            FingeredStroke { stroke, fingering }
         }
-
         n => {
             let (s1, s2_slice) = stroke.split_at(n - 1);
-            let f1 = determine_fingering(s1);
-            let f2 = determine_fingering(s2_slice);
-            combine(f1, f2, s1, s2_slice)
+            let fs1 = determine_fingering(s1);
+            let fs2 = determine_fingering(s2_slice);
+            combine(fs1, fs2)
         }
     }
 }
@@ -294,7 +319,7 @@ pub fn assign_tier(stroke: &[Key]) -> Option<Percentage> {
         return None;
     }
 
-    let fingering = determine_fingering(stroke);
+    let fingering = determine_fingering(stroke).fingering;
 
     // S-tier
     if is_same_row(stroke) {
