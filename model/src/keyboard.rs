@@ -32,8 +32,8 @@ impl Src {
     pub fn keymap(&self) -> KeyMap<Key> {
         let ids = match self {
             Src::Ansi => ANSI.to_vec(),
-            Src::Iso => ANSI.to_vec(),
-            Src::Jis => ANSI.to_vec(),
+            Src::Iso => todo!("Not Supported Yet: ISO Keyboard Src"),
+            Src::Jis => todo!("Not Supported Yet: JIS Keyboard Src"),
         };
         let map = Map(ids
             .iter()
