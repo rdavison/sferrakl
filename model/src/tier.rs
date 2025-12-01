@@ -6,9 +6,15 @@ use std::collections::HashSet;
 pub type Fingering = Vec<HandFinger>;
 
 #[derive(Debug)]
-struct FingeredStroke<'a> {
-    stroke: &'a [Key],
-    fingering: Fingering,
+pub struct FingeredStroke<'a> {
+    pub stroke: &'a [Key],
+    pub fingering: Fingering,
+}
+
+impl<'a> FingeredStroke<'a> {
+    pub fn score(&self) -> Option<Percentage> {
+        assign_tier(self.stroke)
+    }
 }
 
 #[derive(Debug)]
