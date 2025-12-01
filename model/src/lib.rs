@@ -20,7 +20,8 @@ mod tests {
     #[test]
     fn key_display() {
         let actual = Src::Ansi.keymap().to_string();
-        let expected = "Src: Ansi\n` 1 2 3 4 5 6 7 8 9\n0 - = q w e r t y u\ni o p [ ] a s d f g\nh j k l ; ' z x c v\nb n m , . /";
+        let expected =
+            "Src: Ansi\nq w e r t y u i o p\na s d f g h j k l ;\n' z x c v b n m , .\n/";
         assert_eq!(actual, expected);
     }
 
