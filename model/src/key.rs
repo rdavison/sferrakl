@@ -18,6 +18,12 @@ pub enum Id {
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub struct Code(char);
 
+impl From<char> for Code {
+    fn from(c: char) -> Self {
+        Self(c)
+    }
+}
+
 impl std::fmt::Debug for Code {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let Code(c) = self;

@@ -1,4 +1,5 @@
-use crate::key::{Id, Key, KeyMap, Map};
+use crate::key::{Code, Id, Key, KeyMap, Map};
+use std::collections::HashMap;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Src {
@@ -15,6 +16,13 @@ impl std::fmt::Display for Src {
             Src::Jis => write!(f, "Jis"),
         }
     }
+}
+
+pub enum Layout {
+    Ansi,
+    Dvorak,
+    Colemak,
+    Custom(HashMap<Id, Code>),
 }
 
 #[rustfmt::skip]
@@ -50,18 +58,110 @@ impl Src {
 }
 
 pub struct Keyboard {
-    keys: Vec<Key>,
+    keys: HashMap<Id, Key>,
 }
 
 impl Keyboard {
     pub fn new(keymap: &KeyMap<Key>) -> Self {
         Self {
-            keys: keymap.values().cloned().collect(),
+            keys: keymap.map.0.clone(),
         }
     }
 
     pub fn nstrokes(&self, n: usize) -> NStrokeIterator {
-        NStrokeIterator::new(self.keys.clone(), n)
+        NStrokeIterator::new(self.keys.values().cloned().collect(), n)
+    }
+
+    pub fn set_layout(&mut self, layout: &Layout) {
+        match layout {
+            Layout::Ansi => {
+                for key in self.keys.values_mut() {
+                    key.code = key.id.to_code();
+                }
+            }
+            Layout::Custom(custom_map) => {
+                for (id, code) in custom_map {
+                    if let Some(key) = self.keys.get_mut(id) {
+                        key.code = Some(*code);
+                    }
+                }
+            }
+            _ => {
+                // For full layouts like Dvorak, Colemak
+                // First, reset all printable chars to the default Ansi/Qwerty
+                for key in self.keys.values_mut() {
+                    key.code = key.id.to_code();
+                }
+
+                // then apply the new layout on top of QWERTY
+                let mapping = layout.mapping();
+                for (id, code) in &mapping {
+                    if let Some(key) = self.keys.get_mut(id) {
+                        key.code = Some(*code);
+                    }
+                }
+            }
+        }
+    }
+}
+
+impl Layout {
+    pub fn mapping(&self) -> HashMap<Id, Code> {
+        use Id::*;
+        match self {
+            Layout::Ansi => HashMap::new(), // Ansi (Qwerty) is baseline
+            Layout::Dvorak => HashMap::from([
+                (Q, Code::from('\'')),
+                (W, Code::from(',')),
+                (E, Code::from('.')),
+                (R, Code::from('p')),
+                (T, Code::from('y')),
+                (Y, Code::from('f')),
+                (U, Code::from('g')),
+                (I, Code::from('c')),
+                (O, Code::from('r')),
+                (P, Code::from('l')),
+                (S, Code::from('o')),
+                (D, Code::from('e')),
+                (F, Code::from('u')),
+                (G, Code::from('i')),
+                (H, Code::from('d')),
+                (J, Code::from('h')),
+                (K, Code::from('t')),
+                (L, Code::from('n')),
+                (Semi, Code::from('s')),
+                (Quot, Code::from('-')),
+                (Z, Code::from(';')),
+                (X, Code::from('q')),
+                (C, Code::from('j')),
+                (V, Code::from('k')),
+                (B, Code::from('x')),
+                (N, Code::from('b')),
+                (Comm, Code::from('w')),
+                (Prd, Code::from('v')),
+                (Slsh, Code::from('z')),
+            ]),
+            Layout::Colemak => HashMap::from([
+                (E, Code::from('f')),
+                (R, Code::from('p')),
+                (T, Code::from('g')),
+                (Y, Code::from('j')),
+                (U, Code::from('l')),
+                (I, Code::from('u')),
+                (O, Code::from('y')),
+                (P, Code::from(';')),
+                (S, Code::from('r')),
+                (D, Code::from('s')),
+                (F, Code::from('t')),
+                (G, Code::from('d')),
+                (J, Code::from('n')),
+                (K, Code::from('e')),
+                (L, Code::from('i')),
+                (Semi, Code::from('o')),
+                (N, Code::from('k')),
+            ]),
+            Layout::Custom(map) => map.clone(),
+        }
     }
 }
 
