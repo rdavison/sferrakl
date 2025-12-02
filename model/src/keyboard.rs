@@ -1,5 +1,8 @@
-use crate::key::{Code, Id, Key, KeyMap, Map};
-use std::collections::HashMap;
+use crate::finger::Finger;
+use crate::hand::Hand;
+use crate::key::{Code, Id, Key, Map};
+use std::collections::{HashMap, HashSet};
+use std::fmt::Display;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Src {
@@ -19,7 +22,7 @@ impl std::fmt::Display for Src {
 }
 
 pub enum Layout {
-    Ansi,
+    Qwerty,
     Dvorak,
     Colemak,
     Custom(HashMap<Id, Code>),
@@ -36,7 +39,7 @@ pub const ANSI: [Id; 31] = {
 };
 
 impl Src {
-    pub fn keymap(&self) -> KeyMap<Key> {
+    pub fn keymap(&self) -> SrcMap<Key> {
         let ids = match self {
             Src::Ansi => ANSI.to_vec(),
             Src::Iso => todo!("Not Supported Yet: ISO Keyboard Src"),
@@ -49,7 +52,7 @@ impl Src {
                 (key.id, key)
             })
             .collect());
-        KeyMap { src: *self, map }
+        SrcMap { src: *self, map }
     }
     pub fn keyboard(&self) -> Keyboard {
         let keymap = self.keymap();
@@ -62,7 +65,7 @@ pub struct Keyboard {
 }
 
 impl Keyboard {
-    pub fn new(keymap: &KeyMap<Key>) -> Self {
+    pub fn new(keymap: &SrcMap<Key>) -> Self {
         Self {
             keys: keymap.map.0.clone(),
         }
@@ -74,7 +77,7 @@ impl Keyboard {
 
     pub fn set_layout(&mut self, layout: &Layout) {
         match layout {
-            Layout::Ansi => {
+            Layout::Qwerty => {
                 for key in self.keys.values_mut() {
                     key.code = key.id.to_code();
                 }
@@ -87,11 +90,8 @@ impl Keyboard {
                 }
             }
             _ => {
-                // For full layouts like Dvorak, Colemak
                 // First, reset all printable chars to the default Ansi/Qwerty
-                for key in self.keys.values_mut() {
-                    key.code = key.id.to_code();
-                }
+                self.set_layout(&Layout::Qwerty);
 
                 // then apply the new layout on top of QWERTY
                 let mapping = layout.mapping();
@@ -109,7 +109,7 @@ impl Layout {
     pub fn mapping(&self) -> HashMap<Id, Code> {
         use Id::*;
         match self {
-            Layout::Ansi => HashMap::new(), // Ansi (Qwerty) is baseline
+            Layout::Qwerty => HashMap::new(), // Qwerty is baseline
             Layout::Dvorak => HashMap::from([
                 (Q, Code::from('\'')),
                 (W, Code::from(',')),
@@ -249,5 +249,76 @@ impl Iterator for NStrokeIterator {
         // If we are here, all dimensions have been reset, so we are done
         self.done = true;
         Some(result)
+    }
+}
+
+#[derive(Debug)]
+pub struct SrcMap<T> {
+    pub src: Src,
+    pub map: Map<T>,
+}
+
+impl<T> SrcMap<T> {
+    pub fn values(&self) -> impl Iterator<Item = &T> {
+        self.map.0.values()
+    }
+
+    pub fn into_values(self) -> impl Iterator<Item = T> {
+        self.map.0.into_values()
+    }
+}
+
+impl Display for SrcMap<Key> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut out = String::with_capacity(256);
+        out.push_str(&format!("Src: {}\n", self.src));
+
+        // Use the ANSI constant for display order
+        for (i, &id) in ANSI.iter().enumerate() {
+            if let Some(key) = self.map.0.get(&id) {
+                out.push_str(&format!("{}", key));
+
+                if i < ANSI.len() - 1 {
+                    // not the last key
+                    match id {
+                        Id::P | Id::Semi | Id::Prd => out.push('\n'),
+                        _ => out.push(' '),
+                    }
+                }
+            }
+        }
+        write!(f, "{}", out)
+    }
+}
+
+impl SrcMap<Key> {
+    pub fn to_hand_finger_map(self) -> HashMap<Hand, HashMap<Finger, HashSet<Key>>> {
+        let mut hand_finger_map: HashMap<Hand, HashMap<Finger, HashSet<Key>>> = HashMap::new();
+        let Map(map) = self.map;
+
+        for (_, key) in map {
+            hand_finger_map
+                .entry(key.hand)
+                .or_default()
+                .entry(key.finger)
+                .or_default()
+                .insert(key);
+        }
+
+        hand_finger_map
+    }
+
+    pub fn to_hand_finger_tuple_map(self) -> HashMap<(Hand, Finger), HashSet<Key>> {
+        let mut hand_finger_map: HashMap<(Hand, Finger), HashSet<Key>> = HashMap::new();
+        let Map(map) = self.map;
+
+        for (_, key) in map {
+            hand_finger_map
+                .entry((key.hand, key.finger))
+                .or_default()
+                .insert(key);
+        }
+
+        hand_finger_map
     }
 }

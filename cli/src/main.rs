@@ -1,6 +1,6 @@
-use clap::{Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 use core::percentage::T;
-use sferrakl_model::keyboard::{Keyboard, Src};
+use sferrakl_model::keyboard::{Keyboard, Layout, Src};
 use sferrakl_model::tier::assign_tier;
 use std::collections::HashMap;
 
@@ -11,12 +11,22 @@ struct Cli {
     command: Commands,
 }
 
+#[derive(ValueEnum, Clone, Debug)]
+enum LayoutSelection {
+    Qwerty,
+    Dvorak,
+    Colemak,
+}
+
 #[derive(Subcommand)]
 enum Commands {
     /// Prints "Hello, world!"
     Hello,
     /// Generates a histogram of 3-stroke tiers
-    Trigrams,
+    Trigrams {
+        #[arg(short, long, value_enum, default_value_t = LayoutSelection::Qwerty)]
+        layout: LayoutSelection,
+    },
 }
 
 fn main() {
@@ -26,11 +36,18 @@ fn main() {
         Commands::Hello => {
             println!("Hello, world!");
         }
-        Commands::Trigrams => {
+        Commands::Trigrams { layout } => {
             let keymap = Src::Ansi.keymap();
             println!("Keyboard Layout:\n{}\n", keymap);
 
-            let keyboard = Keyboard::new(&keymap);
+            let mut keyboard = Keyboard::new(&keymap);
+            let model_layout = match layout {
+                LayoutSelection::Qwerty => Layout::Qwerty,
+                LayoutSelection::Dvorak => Layout::Dvorak,
+                LayoutSelection::Colemak => Layout::Colemak,
+            };
+            keyboard.set_layout(&model_layout);
+
             let trigrams_iter = keyboard.nstrokes(3);
             let mut tier_histogram: HashMap<String, u32> = HashMap::new();
             let mut all_tiers: Vec<f64> = Vec::new();

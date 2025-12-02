@@ -1,8 +1,6 @@
 use super::finger::Finger;
 use super::hand::Hand;
-use super::keyboard::ANSI;
-use std::collections::{HashMap, HashSet};
-use std::fmt::Display;
+use std::collections::HashMap;
 
 #[rustfmt::skip]
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
@@ -189,48 +187,6 @@ impl Id {
 #[derive(Debug)]
 pub struct Map<T>(pub HashMap<Id, T>);
 
-#[derive(Debug)]
-pub struct KeyMap<T> {
-    pub src: super::keyboard::Src,
-    pub map: Map<T>,
-}
-
-impl Display for KeyMap<Key> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut out = String::with_capacity(256);
-        out.push_str(&format!("Src: {}\n", self.src));
-
-        // Use the ANSI constant for display order
-        for &id in ANSI.iter() {
-            if let Some(key) = self.map.0.get(&id) {
-                out.push_str(&format!("{}", key));
-
-                // Add spacing and newlines for keyboard layout
-                match id {
-                    // QWERTY row (10 keys)
-                    Id::P => out.push_str(" \n "),
-                    // ASDFG row (11 keys)
-                    Id::Quot => out.push_str(" \n  "),
-                    // ZXCVB row (10 keys)
-                    Id::Slsh => out.push_str(" \n   "),
-                    _ => out.push(' '), // default space
-                }
-            }
-        }
-        write!(f, "{}", out.trim_end()) // Trim trailing space
-    }
-}
-
-impl<T> KeyMap<T> {
-    pub fn values(&self) -> impl Iterator<Item = &T> {
-        self.map.0.values()
-    }
-
-    pub fn into_values(self) -> impl Iterator<Item = T> {
-        self.map.0.into_values()
-    }
-}
-
 #[derive(Clone, Debug)]
 pub struct Key {
     pub id: Id,
@@ -333,37 +289,5 @@ impl Id {
 
             _ => vec![],
         }
-    }
-}
-
-impl KeyMap<Key> {
-    pub fn to_hand_finger_map(self) -> HashMap<Hand, HashMap<Finger, HashSet<Key>>> {
-        let mut hand_finger_map: HashMap<Hand, HashMap<Finger, HashSet<Key>>> = HashMap::new();
-        let Map(map) = self.map;
-
-        for (_, key) in map {
-            hand_finger_map
-                .entry(key.hand)
-                .or_default()
-                .entry(key.finger)
-                .or_default()
-                .insert(key);
-        }
-
-        hand_finger_map
-    }
-
-    pub fn to_hand_finger_tuple_map(self) -> HashMap<(Hand, Finger), HashSet<Key>> {
-        let mut hand_finger_map: HashMap<(Hand, Finger), HashSet<Key>> = HashMap::new();
-        let Map(map) = self.map;
-
-        for (_, key) in map {
-            hand_finger_map
-                .entry((key.hand, key.finger))
-                .or_default()
-                .insert(key);
-        }
-
-        hand_finger_map
     }
 }
