@@ -1,11 +1,8 @@
-fn foobar() -> String {
-    "Hello, world!".to_string()
-}
+use sferrakl::corpus;
 
 fn main() {
-    let s = foobar();
-    println!("{}", s);
-    println!("{}", s);
+    let s = corpus::foobar();
+    println!("Main1 {}", s);
 }
 
 #[cfg(test)]
@@ -14,6 +11,6 @@ mod tests {
 
     #[test]
     fn test_foobar() {
-        assert_eq!(foobar(), "Hello, world!");
+        assert_eq!(corpus::foobar(), "Hello, world!");
     }
 }
