@@ -5,11 +5,11 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct Corpus {
-    pub a: HashMap<char, u64>,
-    pub ab: HashMap<(char, char), u64>,
-    pub abc: HashMap<(char, char, char), u64>,
-    pub a_b: HashMap<(char, char), u64>,
-    pub aba: HashMap<(char, char), u64>,
+    pub a: HashMap<String, u64>,
+    pub ab: HashMap<String, u64>,
+    pub abc: HashMap<String, u64>,
+    pub a_b: HashMap<String, u64>,
+    pub aba: HashMap<String, u64>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -21,6 +21,15 @@ pub fn of_string(s: &str) -> Corpus {
     let mut corpus: Corpus = Default::default();
     corpus.read(&mut s.chars());
     corpus
+}
+
+pub fn of_path(path: PathBuf) -> Result<Corpus, Box<dyn Error>> {
+    let bytes = fs::read(path)?;
+    let versioned: VersionedCorpus = rmp_serde::from_slice(&bytes)?;
+    let corpus = match versioned {
+        VersionedCorpus::V1(c) => c,
+    };
+    Ok(corpus)
 }
 
 impl Default for Corpus {
@@ -39,12 +48,12 @@ impl Default for Corpus {
 impl Corpus {
     pub fn read(&mut self, iter: &mut Chars) {
         for (a, b, c) in iter.tuple_windows() {
-            *self.a.entry(a).or_default() += 1;
-            *self.ab.entry((a, b)).or_default() += 1;
-            *self.abc.entry((a, b, c)).or_default() += 1;
-            *self.a_b.entry((a, c)).or_default() += 1;
+            *self.a.entry(a.to_string()).or_default() += 1;
+            *self.ab.entry(format!("{}{}", a, b)).or_default() += 1;
+            *self.abc.entry(format!("{}{}{}", a, b, c)).or_default() += 1;
+            *self.a_b.entry(format!("{}{}", a, c)).or_default() += 1;
             if a == c {
-                *self.aba.entry((a, b)).or_default() += 1;
+                *self.aba.entry(format!("{}{}", a, b)).or_default() += 1;
             }
         }
     }

@@ -5,7 +5,17 @@ use clap::Parser;
 #[derive(Parser)]
 enum SferraklCli {
     BuildCorpus(BuildCorpusArgs),
-    Foobar,
+    Query(QueryArgs),
+}
+
+#[derive(Parser, Debug)]
+#[command(version, about="Query the corpus db", long_about = None)]
+struct QueryArgs {
+    selector: String,
+    key: String,
+    /// corpus db
+    #[arg(short, value_name = "FILEPATH")]
+    db: PathBuf,
 }
 
 #[derive(Parser, Debug)]
@@ -22,7 +32,18 @@ struct BuildCorpusArgs {
 
 fn main() {
     match SferraklCli::parse() {
-        SferraklCli::Foobar => println!("Main1 {}", foobar()),
+        SferraklCli::Query(args) => {
+            let corpus = sferrakl::corpus::of_path(args.db).unwrap();
+            let hashmap = if args.selector == "ab" {
+                corpus.ab
+            } else {
+                panic!("invalid selector: {}", args.selector)
+            };
+            match hashmap.get(&args.key) {
+                Some(value) => println!("{}", value),
+                None => println!("Not Found"),
+            }
+        }
         SferraklCli::BuildCorpus(args) => {
             let s = std::fs::read_to_string(args.input).unwrap();
             sferrakl::corpus::of_string(&s).write(args.output).unwrap();
