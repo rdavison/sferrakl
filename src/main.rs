@@ -25,7 +25,7 @@ fn main() {
         SferraklCli::Foobar => println!("Main1 {}", foobar()),
         SferraklCli::BuildCorpus(args) => {
             let s = std::fs::read_to_string(args.input).unwrap();
-            sferrakl::corpus::of_string(&s).write(args.output);
+            sferrakl::corpus::of_string(&s).write(args.output).unwrap();
         }
     }
 }

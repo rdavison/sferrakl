@@ -1,5 +1,5 @@
 use itertools::Itertools;
-use std::{collections::HashMap, fs, path::PathBuf, str::Chars};
+use std::{collections::HashMap, error::Error, fs, path::PathBuf, str::Chars};
 
 use serde::{Deserialize, Serialize};
 
@@ -49,8 +49,9 @@ impl Corpus {
         }
     }
 
-    pub fn write(self, path: PathBuf) {
-        let serialized = rmp_serde::to_vec(&VersionedCorpus::V1(self)).unwrap();
-        fs::write(path, serialized).unwrap();
+    pub fn write(self, path: PathBuf) -> Result<(), Box<dyn Error>> {
+        let serialized = rmp_serde::to_vec(&VersionedCorpus::V1(self))?;
+        fs::write(path, serialized)?;
+        Ok(())
     }
 }
