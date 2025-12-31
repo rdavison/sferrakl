@@ -19,7 +19,7 @@ pub enum VersionedCorpus {
 
 pub fn of_string(s: &str) -> Corpus {
     let mut corpus: Corpus = Default::default();
-    corpus.read(&mut s.chars());
+    corpus.consume(&mut s.chars());
     corpus
 }
 
@@ -46,7 +46,7 @@ impl Default for Corpus {
 }
 
 impl Corpus {
-    pub fn read(&mut self, iter: &mut Chars) {
+    pub fn consume(&mut self, iter: &mut Chars) {
         for (a, b, c) in iter.tuple_windows() {
             *self.a.entry(a.to_string()).or_default() += 1;
             *self.ab.entry(format!("{}{}", a, b)).or_default() += 1;
