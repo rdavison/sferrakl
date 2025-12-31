@@ -56,7 +56,7 @@ fn main() {
         }
         SferraklCli::BuildCorpus(args) => {
             let s = std::fs::read_to_string(args.input).unwrap();
-            sferrakl::corpus::of_string(&s).write(args.output).unwrap();
+            sferrakl::corpus::of_string(&s).save(args.output).unwrap();
         }
     }
 }

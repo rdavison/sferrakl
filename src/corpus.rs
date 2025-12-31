@@ -58,7 +58,7 @@ impl Corpus {
         }
     }
 
-    pub fn write(self, path: PathBuf) -> Result<(), Box<dyn Error>> {
+    pub fn save(self, path: PathBuf) -> Result<(), Box<dyn Error>> {
         let serialized = rmp_serde::to_vec(&VersionedCorpus::V1(self))?;
         fs::write(path, serialized)?;
         Ok(())
