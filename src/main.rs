@@ -33,13 +33,19 @@ struct BuildCorpusArgs {
 fn main() {
     match SferraklCli::parse() {
         SferraklCli::Query(args) => {
-            let corpus = sferrakl::corpus::of_path(args.db).unwrap();
+            let sferrakl::corpus::Corpus {
+                a,
+                ab,
+                abc,
+                a_b,
+                aba,
+            } = sferrakl::corpus::of_path(args.db).unwrap();
             let hashmap = match args.selector.as_str() {
-                "a" => corpus.a,
-                "ab" => corpus.ab,
-                "abc" => corpus.abc,
-                "a_b" => corpus.a_b,
-                "aba" => corpus.aba,
+                "a" => a,
+                "ab" => ab,
+                "abc" => abc,
+                "a_b" => a_b,
+                "aba" => aba,
                 other => panic!("invalid selector: {}", other),
             };
             for key in args.keys {
@@ -56,6 +62,7 @@ fn main() {
     }
 }
 
+#[warn(dead_code)]
 fn foobar() -> String {
     "Hello, world!".to_string()
 }
