@@ -34,10 +34,13 @@ fn main() {
     match SferraklCli::parse() {
         SferraklCli::Query(args) => {
             let corpus = sferrakl::corpus::of_path(args.db).unwrap();
-            let hashmap = if args.selector == "ab" {
-                corpus.ab
-            } else {
-                panic!("invalid selector: {}", args.selector)
+            let hashmap = match args.selector.as_str() {
+                "a" => corpus.a,
+                "ab" => corpus.ab,
+                "abc" => corpus.abc,
+                "a_b" => corpus.a_b,
+                "aba" => corpus.aba,
+                other => panic!("invalid selector: {}", other),
             };
             match hashmap.get(&args.key) {
                 Some(value) => println!("{}", value),
