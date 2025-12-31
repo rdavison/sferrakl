@@ -1,4 +1,6 @@
 /target
+/corpus.db
+/corpus.txt
 
 
 # Added by cargo
