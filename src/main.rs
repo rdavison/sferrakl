@@ -12,7 +12,7 @@ enum SferraklCli {
 #[command(version, about="Query the corpus db", long_about = None)]
 struct QueryArgs {
     selector: String,
-    key: String,
+    keys: Vec<String>,
     /// corpus db
     #[arg(short, value_name = "FILEPATH")]
     db: PathBuf,
@@ -42,9 +42,11 @@ fn main() {
                 "aba" => corpus.aba,
                 other => panic!("invalid selector: {}", other),
             };
-            match hashmap.get(&args.key) {
-                Some(value) => println!("{}", value),
-                None => println!("Not Found"),
+            for key in args.keys {
+                match hashmap.get(&key) {
+                    Some(value) => println!("{}: {}", key, value),
+                    None => println!("{}: Not Found", key),
+                }
             }
         }
         SferraklCli::BuildCorpus(args) => {
